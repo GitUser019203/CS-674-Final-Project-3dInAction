@@ -17,7 +17,9 @@ Please follow the installation instructions below.
 ## Instructions
 
 ### 1. Requirements
-The code was tested with python 3.8.16 torch 1.10.1 and CUDA 11.3.
+The code was tested with python 3.8.16 torch 1.10.1 and CUDA 11.3. 
+
+- Download Cuda 11.3 first:  [Cuda 11.3 Download]([https://www.anu.edu.au/](https://developer.nvidia.com/cuda-11.3.0-download-archive)) 
 
 ```
 sh
