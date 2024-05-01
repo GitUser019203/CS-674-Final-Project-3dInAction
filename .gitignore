@@ -10,3 +10,7 @@
 **/run_experiment_remote.sh
 temp.py
 ./models/_ext.cpython-39-x86_64-linux-gnu.su
+datasets/data/DFAUST/*
+datasets/data/IKEA ASM/*
+datasets/data/MSRAction3D_fps/*
+efran_test.py

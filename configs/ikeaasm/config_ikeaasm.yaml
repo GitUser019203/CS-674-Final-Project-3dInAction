@@ -3,7 +3,7 @@ save_every: 5
 num_workers: 0
 
 MODEL:
-  pc_model: 'pn2_patchlets' # which model to use for point cloud processing
+  pc_model: 'set_transformer' # which model to use for point cloud processing set_transformer pn2_patchlets
   3DMFV:
     n_gaussians: 8
   SET_TRANSFORMER:
@@ -30,7 +30,7 @@ TRAINING:
   lr: 0.001
   steps_per_update: 8
   batch_size: 2
-  n_epochs: 61
+  n_epochs: 1 # 61
   refine: False
   refine_epoch: 0
   pretrained_model: null
@@ -43,7 +43,7 @@ TESTING:
 
 DATA:
   name: 'IKEA_ASM'
-  dataset_path: '/home/sitzikbs/Datasets/ANU_ikea_dataset_smaller_clips/32/'
+  dataset_path: 'datasets\data\IKEA ASM\ANU_ikea_dataset_smaller_clips\32'
   frame_skip: 1
   frames_per_clip: 32
   data_sampler: 'weighted'

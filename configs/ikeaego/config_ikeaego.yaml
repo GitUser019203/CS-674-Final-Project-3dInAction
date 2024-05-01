@@ -75,7 +75,7 @@ TESTING:
 
 DATA:
   name: 'IKEA_EGO'
-  dataset_path: '/home/sitzikbs/Datasets/ikeaego_small_clips/32/'
+  dataset_path: '/home/sitzikbs/Datasets/ikeaego_small_clips/32/' #'/home/sitzikbs/Datasets/ikeaego_small_clips/32/'
   frame_skip: 1
   frames_per_clip: 32
   data_sampler: 'weighted'

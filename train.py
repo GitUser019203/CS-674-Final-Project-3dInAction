@@ -42,21 +42,28 @@ def main():
         project_name = 'IKEA ASM'
     else:
         raise NotImplementedError
-    wandb_run = wandb.init(project=project_name, entity='cgmlab', save_code=True)
-    cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
+    
+    print(cfg)
+    print(project_name)
+    
+    
+    #wandb_run = wandb.init(project=project_name, entity='cgmlab', save_code=True)
+    #cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
 
-    wandb_run.name = args.identifier
-    wandb.config.update(cfg)  # adds all the arguments as config variables
-    wandb.run.log_code(".")
+    #wandb_run.name = args.identifier
+    #wandb.config.update(cfg)  # adds all the arguments as config variables
+    #wandb.run.log_code(".")
     # define our custom x axis metric
-    wandb.define_metric("train/step")
-    wandb.define_metric("train/*", step_metric="train/step")
-    wandb.define_metric("test/*", step_metric="train/step")
+    #wandb.define_metric("train/step")
+    #wandb.define_metric("train/*", step_metric="train/step")
+    #wandb.define_metric("test/*", step_metric="train/step")
 
     # need to add argparse
+    
+    print('-------- about to run stuff!')
     run(cfg, logdir)
 
 def run(cfg, logdir):
@@ -78,6 +85,8 @@ def run(cfg, logdir):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+    print('__file__', __file__)
+    
     os.system('cp %s %s' % (__file__, logdir))  # backup the current training file
     os.makedirs(os.path.join(logdir, 'models'), exist_ok=True)
     os.system('cp %s %s' % ('models/*.py', os.path.join(logdir, 'models')))  # backup the models files
@@ -104,6 +113,9 @@ def run(cfg, logdir):
         model.load_state_dict(checkpoint["model_state_dict"])
 
     model.cuda()
+    
+    print('---------------', model.cuda())
+    
     model = nn.DataParallel(model)
 
     # define optimizer and scheduler
@@ -192,7 +204,7 @@ def run(cfg, logdir):
                     "train/lr":  optimizer.param_groups[0]['lr'],
                     "train/epoch": steps,
                 }
-                wandb.log(log_dict)
+                #wandb.log(log_dict)
 
                 num_iter = 0
                 tot_loss = 0.
@@ -228,7 +240,7 @@ def run(cfg, logdir):
                     "test/loc_loss": cls_loss.item(),
                     "test/Accuracy": acc.item()
                 }
-                wandb.log(log_dict)
+                #wandb.log(log_dict)
                 test_fraction_done = (test_batchind + 1) / test_num_batch
                 model.train()
 
@@ -249,3 +261,6 @@ def run(cfg, logdir):
 
 if __name__ == '__main__':
     main()
+    #print('hello')
+    
+    print('-------- about to run stuff!')

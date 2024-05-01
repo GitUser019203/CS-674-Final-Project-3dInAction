@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .IKEAEgoDatasetClips import IKEAEgoDatasetClips
-from .DfaustDataset import DfaustActionClipsDataset
+#from .DfaustDataset import DfaustActionClipsDataset
 from .IKEAActionDatasetClips import IKEAActionDatasetClips
 
 import i3d_utils as utils

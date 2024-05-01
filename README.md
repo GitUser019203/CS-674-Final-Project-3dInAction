@@ -28,15 +28,18 @@ conda install pip #for using pip commands in the conda environments
 # Below is instructions for installation of long term support
 conda install pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatoolkit=11.3 -c pytorch -c conda-forge
 #Then install all other requirements
-pip install -r requirements.txt
+pip install faiss-gpu
+pip install -r requirements.txt (note, if any of the packages gives you an error, I suggest removing the '==version_number' from it)
+
 ```
 Then compile the pointnet2 modules for FPS:
 ```
 cd ./models
+(the part below gave me a lot of errors and I could not get it to work)
 python setup.py install
 ```
 
-We use `wandb` for tracking our experiments (losses accuracy etc.)
+We use `wandb` for tracking our experiments (losses accuracy etc.) (Note: I commented out the wandb references. Don't need to make an account)
 so you may need to either [set up an account](https://wandb.ai/site) or comment out the logging code lines.
 
 ### 2. Datasets
