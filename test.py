@@ -16,15 +16,10 @@ import sys
 import importlib
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
-parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
-parser.add_argument('--model_ckpt', type=str, default='000000.pt', help='checkpoint to load')
-parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
-args = parser.parse_args()
 
 
-def run(cfg, logdir, model_path, output_path):
+
+def run(cfg, logdir, model_path, output_path, args):
     batch_size = cfg['TESTING']['batch_size']
     frames_per_clip = cfg['DATA']['frames_per_clip']
     subset = cfg['TESTING']['set']
@@ -96,10 +91,21 @@ def run(cfg, logdir, model_path, output_path):
                                                test_dataset.action_list, dataset_name=data_name)
 
 
-if __name__ == '__main__':
+
+def main(args):
     cfg = yaml.safe_load(open(os.path.join(args.logdir, args.identifier, 'config.yaml')))
     logdir = os.path.join(args.logdir, args.identifier)
     output_path = os.path.join(logdir, 'results')
     os.makedirs(output_path, exist_ok=True)
     model_path = os.path.join(logdir, args.model_ckpt)
-    run(cfg, logdir, model_path, output_path)
+    run(cfg, logdir, model_path, output_path, args)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
+    parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
+    parser.add_argument('--model_ckpt', type=str, default='000000.pt', help='checkpoint to load')
+    parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
+    args = parser.parse_args()
+    
+    main(args)

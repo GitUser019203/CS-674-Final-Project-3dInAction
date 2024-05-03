@@ -20,15 +20,10 @@ from datasets import build_dataloader
 from tqdm import tqdm
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
-parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
-parser.add_argument('--config', type=str, default='./configs/dfaust/config_dfaust.yaml', help='path to yaml config file')
-parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
-args = parser.parse_args()
 
 
-def main():
+
+def main(args):
     cfg = yaml.safe_load(open(args.config))
     logdir = os.path.join(args.logdir, args.identifier)
     os.makedirs(logdir, exist_ok=True)
@@ -66,9 +61,9 @@ def main():
     # need to add argparse
     
     print('-------- about to run stuff!')
-    run(cfg, logdir)
+    run(cfg, logdir, args)
 
-def run(cfg, logdir):
+def run(cfg, logdir, args):
     n_epochs = cfg['TRAINING']['n_epochs']
     lr = cfg['TRAINING']['lr']
     batch_size = cfg['TRAINING']['batch_size']
@@ -141,7 +136,6 @@ def run(cfg, logdir):
     print( os.path.join(logdir))
     
     print('stopping here!')
-    return
     
     while steps <= n_epochs:
         if steps <= refine_epoch and refine and refine_flag:
@@ -270,5 +264,11 @@ def run(cfg, logdir):
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
+    parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
+    parser.add_argument('--config', type=str, default='./configs/dfaust/config_dfaust.yaml', help='path to yaml config file')
+    parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
+    args = parser.parse_args()
+    main(args)
     #print('hello')

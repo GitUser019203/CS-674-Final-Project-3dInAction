@@ -14,4 +14,5 @@ echo '--------------- starting training'
 echo '--------------- starting testing'
 #python test.py --identifier $IDENTIFIER --model_ckpt '000001.pt' --logdir $LOGDIR --fix_random_seed
 echo '--------------- starting eval'
-python ./evaluate.py --identifier $IDENTIFIER --logdir $LOGDIR
+#python ./evaluate.py --identifier $IDENTIFIER --logdir $LOGDIR
+python evaluate.py --identifier $IDENTIFIER --logdir $LOGDIR

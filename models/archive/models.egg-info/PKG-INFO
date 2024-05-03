@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: models
+Version: 0.0.0
+Author: Erik Wijmans
+Requires-Dist: torch>=1.4

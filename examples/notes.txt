@@ -1,0 +1,6 @@
+The dfaust, ikeaactio, and ikeago folders each have their own custom train and run scripts for quick testing. 
+
+These folders can be referenced when modifying train.py, test.py, and evaluation.py in the project root folder.
+
+Or you can move the dfaust, ikeaactio, or ikeago folders into project root and run them individually.
+    Note: If you do this, you may get errors and may have to disable some of the imports as they are referencing models in the models folder that have been archived.

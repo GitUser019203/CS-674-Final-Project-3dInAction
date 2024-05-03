@@ -1,1 +1,1 @@
-sh run_experiment.sh
+conda activate tpatches_env
