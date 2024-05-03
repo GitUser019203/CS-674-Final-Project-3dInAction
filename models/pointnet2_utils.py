@@ -14,9 +14,12 @@ except ImportError:
     import os.path as osp
     import os
 
+    print('------------ FAILED import models._ext as _ext')
+    print('------------ NOT USING FPS')
+    
     warnings.warn("Unable to load pointnet2_ops cpp extension. JIT Compiling.")
 
-    _ext_src_root = osp.join(osp.dirname(__file__), "_ext-src")
+    """_ext_src_root = osp.join(osp.dirname(__file__), "_ext-src")
     _ext_sources = glob.glob(osp.join(_ext_src_root, "src", "*.cpp")) + glob.glob(
         osp.join(_ext_src_root, "src", "*.cu")
     )
@@ -30,7 +33,7 @@ except ImportError:
         extra_cflags=["-O3"],
         extra_cuda_cflags=["-O3", "-Xfatbin", "-compress-all"],
         with_cuda=True,
-    )
+    )"""
 
 def timeit(tag, t):
     print("{}: {}s".format(tag, time() - t))
@@ -524,7 +527,10 @@ class FurthestPointSampling(Function):
         torch.Tensor
             (B, npoint) tensor containing the set
         """
-        fps_inds = _ext.furthest_point_sampling(xyz, npoint)
+        
+        #! fps_inds = _ext.furthest_point_sampling(xyz, npoint)
+        fps_inds = xyz
+        
         ctx.mark_non_differentiable(fps_inds)
         return fps_inds
 
@@ -533,4 +539,4 @@ class FurthestPointSampling(Function):
         return None, None
 
 
-farthest_point_sample = FurthestPointSampling.apply
+#farthest_point_sample = FurthestPointSampling.apply

@@ -9,7 +9,7 @@ from .pytorch_3dmfv import FourDmFVNet
 from .set_transformer import SetTransformerTemporal
 #from .tpatch_trajectory import tPatchTraj
 from .DGCNN import DGCNN
-from .pstnet import PSTnet
+#from .pstnet import PSTnet
 #from .PST_Transformer import PSTTransformer
 #from .P4Transformer import P4Transformer
 

@@ -14,7 +14,7 @@ from evaluation.eval_detection import ANETdetection
 from evaluation.eval_classification import ANETclassification
 import sklearn
 import yaml
-import wandb
+#import wandb
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--logdir', type=str, default='../log/', help='path to model save dir')
@@ -22,9 +22,9 @@ parser.add_argument('--identifier', type=str, default='debug', help='unique run 
 args = parser.parse_args()
 
 cfg = yaml.safe_load(open(os.path.join(args.logdir, args.identifier, 'config.yaml')))
-run = wandb.init(entity=cfg['WANDB']['entity'], project=cfg['WANDB']['project'], id=cfg['WANDB']['id'], resume='must')
-wandb.define_metric("eval/step")
-wandb.define_metric("eval/*", step_metric="eval/step")
+#run = wandb.init(entity=cfg['WANDB']['entity'], project=cfg['WANDB']['project'], id=cfg['WANDB']['id'], resume='must')
+#wandb.define_metric("eval/step")
+#wandb.define_metric("eval/*", step_metric="eval/step")
 
 results_path = os.path.join(args.logdir, args.identifier, 'results/')
 subset = cfg['TESTING']['set']
@@ -141,7 +141,7 @@ plt.savefig(img_out_filename)
 img = plt.imread(img_out_filename)
 
 columns = ["top 1", "top 3", "macro", "mAP"]
-results_table = wandb.Table(columns=columns, data=[[top1, top3, balanced_score, mAP]])
-images = wandb.Image(img, caption="Confusion matrix")
-wandb.log({"eval/confusion matrix": images, "eval/Results summary": results_table})
+#results_table = wandb.Table(columns=columns, data=[[top1, top3, balanced_score, mAP]])
+#images = wandb.Image(img, caption="Confusion matrix")
+#wandb.log({"eval/confusion matrix": images, "eval/Results summary": results_table})
 

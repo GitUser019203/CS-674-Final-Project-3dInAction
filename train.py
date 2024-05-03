@@ -16,7 +16,7 @@ from models.pointnet import feature_transform_regularizer
 from models import build_model
 from datasets import build_dataloader
 
-import wandb
+#import wandb
 from tqdm import tqdm
 
 
@@ -52,6 +52,8 @@ def main():
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
+        
+    print('saving outputs for this run too:', logdir)
 
     #wandb_run.name = args.identifier
     #wandb.config.update(cfg)  # adds all the arguments as config variables
@@ -114,7 +116,7 @@ def run(cfg, logdir):
 
     model.cuda()
     
-    print('---------------', model.cuda())
+    #print('---------------', model.cuda())
     
     model = nn.DataParallel(model)
 
@@ -131,8 +133,16 @@ def run(cfg, logdir):
     train_num_batch = len(train_dataloader)
     test_num_batch = len(test_dataloader)
     refine_flag = True
+    
+    print(train_dataloader)
 
     pbar = tqdm(total=n_epochs, desc='Training', dynamic_ncols=True)
+    
+    print( os.path.join(logdir))
+    
+    print('stopping here!')
+    return
+    
     while steps <= n_epochs:
         if steps <= refine_epoch and refine and refine_flag:
             # lr_sched.step()
@@ -262,5 +272,3 @@ def run(cfg, logdir):
 if __name__ == '__main__':
     main()
     #print('hello')
-    
-    print('-------- about to run stuff!')

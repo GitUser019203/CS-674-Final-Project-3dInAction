@@ -5,6 +5,7 @@ torch.autograd.set_detect_anomaly(True)
 import time
 from models.extractors import TPatchExtractor, TPatchExtractorBidirectional, TPatchExtractorStrided
 
+print('imported tpatches!')
 
 
 class PatchletTemporalConv(nn.Module):
