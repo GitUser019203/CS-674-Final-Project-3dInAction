@@ -16,6 +16,38 @@ import sklearn
 import yaml
 #import wandb
 
+import logging
+
+def create_basic_logger(logdir, level = 'info'):
+    print(f'Using logging level {level} for evaluate.py')
+    global logger
+    logger = logging.getLogger('eval_logger')
+    
+    #? set logging level
+    if level.lower() == 'debug':
+        logger.setLevel(logging.DEBUG)
+    elif level.lower() == 'info':
+        logger.setLevel(logging.INFO)
+    elif level.lower() == 'warning':
+        logger.setLevel(logging.WARNING)
+    elif level.lower() == 'error':
+        logger.setLevel(logging.ERROR)
+    elif level.lower() == 'critical':
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    #? create handlers
+    file_handler = logging.FileHandler(os.path.join(logdir, "log_eval.log"))
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    stream_handler = logging.StreamHandler()
+    #stream_handler.setLevel(logging.INFO)
+    #stream_handler.setFormatter(stream_handler)
+    logger.addHandler(stream_handler)
+    return logger
 
 
 def main(args):
@@ -23,7 +55,8 @@ def main(args):
     #run = wandb.init(entity=cfg['WANDB']['entity'], project=cfg['WANDB']['project'], id=cfg['WANDB']['id'], resume='must')
     #wandb.define_metric("eval/step")
     #wandb.define_metric("eval/*", step_metric="eval/step")
-
+    logger = create_basic_logger(logdir = args.logdir, level = args.loglevel)
+    
     results_path = os.path.join(args.logdir, args.identifier, 'results/')
     subset = cfg['TESTING']['set']
     data_name = cfg['DATA']['name']
@@ -91,7 +124,7 @@ def main(args):
     top1, top3 = round(np.mean(acc1_per_vid), 2), round(np.mean(acc3_per_vid), 2)
     scores_str = 'top1, top3 accuracy: {} & {}\n'.format(top1, top3)
 
-    print(scores_str)
+    logger.info(scores_str)
     balanced_acc_per_vid = []
 
     for vid_idx in range(len(logits)):
@@ -110,7 +143,7 @@ def main(args):
 
     balanced_score = round(np.mean(balanced_acc_per_vid)*100, 2)
     balanced_score_str = 'balanced accuracy: {}'.format(balanced_score)
-    print(balanced_score_str)
+    logger.info(balanced_score_str)
 
 
     # output the dataset total score
@@ -121,7 +154,7 @@ def main(args):
         file.writelines(balanced_score_str)
 
     # Compute confusion matrix
-    print('Comptuing confusion matrix...')
+    logger.info('Comptuing confusion matrix...')
 
     c_matrix = confusion_matrix(np.concatenate(gt_single_labels).ravel(), np.concatenate(pred_labels).ravel(),
                                 labels=range(dataset.num_classes))
@@ -146,6 +179,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--logdir', type=str, default='../log/', help='path to model save dir')
+    parser.add_argument('--loglevel', type=str, default='info', help='set level of logger')
     parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
     args = parser.parse_args()
     main(args)

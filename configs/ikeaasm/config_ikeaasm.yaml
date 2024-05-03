@@ -30,7 +30,7 @@ TRAINING:
   lr: 0.001
   steps_per_update: 8
   batch_size: 2
-  n_epochs: 1 # 61
+  n_epochs: 24 # 61
   refine: False
   refine_epoch: 0
   pretrained_model: null

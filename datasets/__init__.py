@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .IKEAEgoDatasetClips import IKEAEgoDatasetClips
-#from .DfaustDataset import DfaustActionClipsDataset
+from .DfaustDataset import DfaustActionClipsDataset
 from .IKEAActionDatasetClips import IKEAActionDatasetClips
 
 import i3d_utils as utils
@@ -26,7 +26,7 @@ def build_dataset(cfg, training=True):
     return dataset
 
 
-def build_dataloader(config, training=True, shuffle=False):
+def build_dataloader(config, training=True, shuffle=False, logger=None):
     dataset = build_dataset(config, training)
 
     num_workers = config['num_workers']
@@ -34,7 +34,10 @@ def build_dataloader(config, training=True, shuffle=False):
     data_sampler = config['DATA'].get('data_sampler')
 
     split = 'train' if training else 'test'
-    print("Number of clips in the {} set:{}".format(split, len(dataset)))
+    if logger != None:
+        logger.info(f"Number of clips in the {split} set: {len(dataset)}")
+    else:
+        print("Number of clips in the {} set: {}".format(split, len(dataset)))
 
     if training and data_sampler == 'weighted':
         if config['DATA'].get('name') == 'DFAUST':
