@@ -3,7 +3,7 @@ save_every: 5
 num_workers: 0
 
 MODEL:
-  pc_model: 'set_transformer' # which model to use for point cloud processing set_transformer pn2_patchlets
+  pc_model: 'set_transformer' # which model to use for point cloud processing tpatches, set_transformer, tpatch_trajectory, pn2_patchlets,
   3DMFV:
     n_gaussians: 8
   SET_TRANSFORMER:
@@ -16,11 +16,11 @@ MODEL:
     temporal_smoothing: 0
   TPATCHES:
     centroid_jitter: 0.001
-    sample_mode: 'nn'  # nn | randn | gt type of patchlet sampling
+    sample_mode: 'randn'  # nn | randn | gt type of patchlet sampling
     k: [ 16, 16, 16 ]
     npoints: [ 512, 128, null ]
     temp_conv: 7
-    downsample_method: 'fps'
+    downsample_method: 'var' # fps (not working), var, mean_var_t, 
     radius: [null, null, null]
     type: 'skip_con' # 'origin' / 'skip_con' / 'attn_last_layer' / 'attn_all_layers'
     attn_num_heads: 4 # only applicable with 'attn_last_layer' or 'attn_all_layers'
