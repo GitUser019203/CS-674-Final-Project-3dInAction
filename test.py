@@ -134,7 +134,8 @@ def main(args):
     model_path = os.path.join(logdir, args.model_ckpt)
     
     logger.info(f'=================== Starting testing run for {args.identifier}')
-    logger.info(cfg)
+    logger.info(f'Config: {cfg}')
+    logger.info(f'Model Path: {model_path}')
     
     run(cfg, logdir, model_path, output_path, args)
 
