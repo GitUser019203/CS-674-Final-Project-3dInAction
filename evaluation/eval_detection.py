@@ -12,12 +12,50 @@ from joblib import Parallel, delayed
 from .eval_utils import interpolated_prec_rec
 from .eval_utils import segment_iou
 
+import os
+import logging
+
+def create_basic_logger(logdir, level = 'info'):
+    print(f'Using logging level {level} for evaluate.py')
+    global logger
+    logger = logging.getLogger('eval_logger')
+    
+    #? set logging level
+    if level.lower() == 'debug':
+        logger.setLevel(logging.DEBUG)
+    elif level.lower() == 'info':
+        logger.setLevel(logging.INFO)
+    elif level.lower() == 'warning':
+        logger.setLevel(logging.WARNING)
+    elif level.lower() == 'error':
+        logger.setLevel(logging.ERROR)
+    elif level.lower() == 'critical':
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    #? create handlers
+    
+    print('---------------------- ', os.path.join(logdir, "log_eval.log"))
+    
+    file_handler = logging.FileHandler(os.path.join(logdir, "log_eval.log"))
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    stream_handler = logging.StreamHandler()
+    #stream_handler.setLevel(logging.INFO)
+    #stream_handler.setFormatter(stream_handler)
+    logger.addHandler(stream_handler)
+    return logger
+
+
 class ANETdetection(object):
 
     GROUND_TRUTH_FIELDS = ['version', 'database'] #['database', 'taxonomy', 'version']
     PREDICTION_FIELDS = ['results', 'version'] #['results', 'version', 'external_data']
 
-    def __init__(self, ground_truth_filename=None, prediction_filename=None,
+    def __init__(self, logger, ground_truth_filename=None, prediction_filename=None,
                  ground_truth_fields=GROUND_TRUTH_FIELDS,
                  prediction_fields=PREDICTION_FIELDS,
                  tiou_thresholds=np.linspace(0.5, 0.95, 10),
@@ -34,6 +72,7 @@ class ANETdetection(object):
         self.pred_fields = prediction_fields
         self.ap = None
         self.check_status = check_status
+        self.logger = logger
 
         # Retrieve blocked videos from server.
         # if self.check_status:
@@ -46,12 +85,12 @@ class ANETdetection(object):
         self.prediction = self._import_prediction(prediction_filename)
 
         if self.verbose:
-            print('[INIT] Loaded annotations from {} subset.'.format(subset))
+            self.logger.info('[INIT] Loaded annotations from {} subset.'.format(subset))
             nr_gt = len(self.ground_truth)
-            print('\tNumber of ground truth instances: {}'.format(nr_gt))
+            self.logger.info('\tNumber of ground truth instances: {}'.format(nr_gt))
             nr_pred = len(self.prediction)
-            print('\tNumber of predictions: {}'.format(nr_pred))
-            print('\tFixed threshold for tiou score: {}'.format(self.tiou_thresholds))
+            self.logger.info('\tNumber of predictions: {}'.format(nr_pred))
+            self.logger.info('\tFixed threshold for tiou score: {}'.format(self.tiou_thresholds))
 
     def _import_ground_truth(self, ground_truth_filename):
         """Reads ground truth file, checks if it is well formatted, and returns
@@ -137,9 +176,10 @@ class ANETdetection(object):
         is no predcitions with the given label.
         """
         try:
+            self.logger.info('SUCCESS: Label \'%s\' were provdied.' % label_name)
             return prediction_by_label.get_group(cidx).reset_index(drop=True)
         except:
-            print('Warning: No predictions of label \'%s\' were provdied.' % label_name)
+            self.logger.warning('No predictions of label \'%s\' were provdied.' % label_name)
             return pd.DataFrame()
 
     def wrapper_compute_average_precision(self):
@@ -175,10 +215,11 @@ class ANETdetection(object):
         self.average_mAP = self.mAP.mean()
 
         if self.verbose:
-            print('[RESULTS] Performance on IKEA Dataset temporal localization task.')
-            print('\tAverage-mAP: {}'.format(self.average_mAP))
-            print('mAP scores : {}'.format(self.mAP))
+            self.logger.info('[RESULTS] Performance on IKEA Dataset temporal localization task.')
+            self.logger.info('\tAverage-mAP: {}'.format(self.average_mAP))
+            self.logger.info('mAP scores : {}'.format(self.mAP))
 
+            
 def compute_average_precision_detection(ground_truth, prediction, tiou_thresholds=np.linspace(0.5, 0.95, 10)):
     """Compute average precision (detection task) between ground truth and
     predictions data frames. If multiple predictions occurs for the same
