@@ -23,7 +23,7 @@ import utils as point_utils
 from models.patchlets import PointNet2Patchlets, PointNet2Patchlets
 from models.set_transformer import SetTransformerTemporal
 from torch.multiprocessing import set_start_method
-import wandb
+#import wandb
 
 
 np.random.seed(0)
@@ -210,7 +210,7 @@ def run(cfg, logdir):
                     "train/loc_loss": tot_loc_loss / n_steps,
                     "train/Accuracy": np.mean(avg_acc),
                     "train/lr":  optimizer.param_groups[0]['lr'] }
-                wandb.log(log_dict)
+                #wandb.log(log_dict)
 
                 train_writer.add_scalar('loss', tot_loss / n_steps, n_examples)
                 train_writer.add_scalar('cls loss', tot_cls_loss / n_steps, n_examples)
@@ -254,7 +254,7 @@ def run(cfg, logdir):
                     "test/cls_loss": loc_loss.item(),
                     "test/loc_loss": cls_loss.item(),
                     "test/Accuracy": acc.item()}
-                wandb.log(log_dict)
+                #wandb.log(log_dict)
                 test_writer.add_scalar('loss', loss.item(), n_examples)
                 test_writer.add_scalar('cls loss', loc_loss.item(), n_examples)
                 test_writer.add_scalar('loc loss', cls_loss.item(), n_examples)
@@ -280,22 +280,22 @@ if __name__ == '__main__':
     # set_start_method('spawn')
     cfg = yaml.safe_load(open(args.config))
     logdir = os.path.join(args.logdir, args.identifier)
-    wandb_run = wandb.init(project='DFAUST', entity='cgmlab', save_code=True)
+    #wandb_run = wandb.init(project='DFAUST', entity='cgmlab', save_code=True)
 
     os.makedirs(logdir, exist_ok=True)
-    cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
+    #cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
 
-    wandb_run.name = args.identifier
-    wandb.config.update(cfg)  # adds all of the arguments as config variables
-    wandb.run.log_code(".")
-    wandb.run.log_code("../")
+    #wandb_run.name = args.identifier
+    #wandb.config.update(cfg)  # adds all of the arguments as config variables
+    #wandb.run.log_code(".")
+    #wandb.run.log_code("../")
     # define our custom x axis metric
-    wandb.define_metric("train/step")
-    wandb.define_metric("train/*", step_metric="train/step")
-    wandb.define_metric("test/*", step_metric="train/step")
+    #wandb.define_metric("train/step")
+    #wandb.define_metric("train/*", step_metric="train/step")
+    #wandb.define_metric("test/*", step_metric="train/step")
 
     # need to add argparse
     print("Starting training ...")
