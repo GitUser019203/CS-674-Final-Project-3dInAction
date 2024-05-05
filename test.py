@@ -16,15 +16,41 @@ import sys
 import importlib
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
-parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
-parser.add_argument('--model_ckpt', type=str, default='000000.pt', help='checkpoint to load')
-parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
-args = parser.parse_args()
+import logging
+
+def create_basic_logger(logdir, level = 'info'):
+    print(f'Using logging level {level} for train.py')
+    global logger
+    logger = logging.getLogger('test_logger')
+    
+    #? set logging level
+    if level.lower() == 'debug':
+        logger.setLevel(logging.DEBUG)
+    elif level.lower() == 'info':
+        logger.setLevel(logging.INFO)
+    elif level.lower() == 'warning':
+        logger.setLevel(logging.WARNING)
+    elif level.lower() == 'error':
+        logger.setLevel(logging.ERROR)
+    elif level.lower() == 'critical':
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    #? create handlers
+    file_handler = logging.FileHandler(os.path.join(logdir, "log_test.log"))
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    stream_handler = logging.StreamHandler()
+    #stream_handler.setLevel(logging.INFO)
+    #stream_handler.setFormatter(stream_handler)
+    logger.addHandler(stream_handler)
+    return logger
 
 
-def run(cfg, logdir, model_path, output_path):
+def run(cfg, logdir, model_path, output_path, args):
     batch_size = cfg['TESTING']['batch_size']
     frames_per_clip = cfg['DATA']['frames_per_clip']
     subset = cfg['TESTING']['set']
@@ -40,7 +66,7 @@ def run(cfg, logdir, model_path, output_path):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    test_dataloader, test_dataset = build_dataloader(config=cfg, training=False, shuffle=False)
+    test_dataloader, test_dataset = build_dataloader(config=cfg, training=False, shuffle=False, logger=logger)
     num_classes = test_dataset.num_classes
 
     # setup the model
@@ -78,7 +104,7 @@ def run(cfg, logdir, model_path, output_path):
         acc = i3d_utils.accuracy_v2(torch.argmax(logits, dim=1), torch.argmax(labels, dim=1))
         avg_acc.append(acc.detach().cpu().numpy())
         n_examples += batch_size
-        print('batch Acc: {}, [{} / {}]'.format(acc.item(), test_batchind, len(test_dataloader)))
+        logger.info('batch Acc: {}, [{} / {}]'.format(acc.item(), test_batchind, len(test_dataloader)))
         logits = logits.permute(0, 2, 1)
         logits = logits.reshape(inputs.shape[0] * frames_per_clip, -1)
         pred_labels = torch.argmax(logits, 1).detach().cpu().numpy()
@@ -96,10 +122,29 @@ def run(cfg, logdir, model_path, output_path):
                                                test_dataset.action_list, dataset_name=data_name)
 
 
-if __name__ == '__main__':
+
+def main(args):
     cfg = yaml.safe_load(open(os.path.join(args.logdir, args.identifier, 'config.yaml')))
     logdir = os.path.join(args.logdir, args.identifier)
     output_path = os.path.join(logdir, 'results')
     os.makedirs(output_path, exist_ok=True)
+    
+    logger = create_basic_logger(logdir = logdir, level = args.loglevel)
+    
     model_path = os.path.join(logdir, args.model_ckpt)
-    run(cfg, logdir, model_path, output_path)
+    
+    logger.info(f'=================== Starting testing run for {args.identifier}')
+    logger.info(cfg)
+    
+    run(cfg, logdir, model_path, output_path, args)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
+    parser.add_argument('--loglevel', type=str, default='info', help='set level of logger')
+    parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
+    parser.add_argument('--model_ckpt', type=str, default='000000.pt', help='checkpoint to load')
+    parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
+    args = parser.parse_args()
+    
+    main(args)
