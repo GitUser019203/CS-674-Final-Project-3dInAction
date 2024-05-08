@@ -8,7 +8,7 @@ from DfaustDataset import DfaustActionClipsDataset
 from ikeaaction.IKEAActionDatasetClips import IKEAActionDatasetClips
 import os
 # import pandas as pd
-import wandb
+#import wandb
 from models.patchlets import PatchletsExtractor
 import matplotlib.pyplot as plt
 
@@ -42,7 +42,7 @@ if sweep:
             'dfaust_augmentation': {'values': dfaust_augmentation},
          }
     }
-    sweep_id = wandb.sweep(sweep=configuration, project='point_drop_sweep')
+    #sweep_id = wandb.sweep(sweep=configuration, project='point_drop_sweep')
     # sweep_id = 'cgmlab/point_drop_sweep/bi58lqyg'
 else:
     dataset_name = 'dfaust'
@@ -56,14 +56,14 @@ else:
 
 
 def main():
-    wandb.init()
-    if not sweep:
-        wandb.config.update(configuration)  # adds all of the arguments as config variables
+    #wandb.init()
+    #if not sweep:
+    #    wandb.config.update(configuration)  # adds all of the arguments as config variables
 
-    k = wandb.config.k
-    sample_mode = wandb.config.sample_mode
-    add_centroid_jitter = wandb.config.centroid_noise
-    dataset_name = wandb.config.dataset_name
+    #k = wandb.config.k
+    #sample_mode = wandb.config.sample_mode
+    #add_centroid_jitter = wandb.config.centroid_noise
+    #dataset_name = wandb.config.dataset_name
 
     extract_pachlets = PatchletsExtractor(k=k, npoints=npoints, sample_mode=sample_mode,
                                           add_centroid_jitter=add_centroid_jitter)

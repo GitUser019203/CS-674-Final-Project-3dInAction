@@ -1,3 +1,4 @@
+
 import faiss
 from faiss.contrib.torch_utils import torch_replacement_knn_gpu as faiss_torch_knn_gpu
 from pykeops.torch import Vi, Vj
@@ -8,7 +9,7 @@ import torch.nn as nn
 import models.pointnet2_utils as utils
 
 
-def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=faiss.StandardGpuResources(),
+def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None,
                  sample_mode='nn', add_centroid_jitter=None, downsample_method='fps', npoints=None):
     b, t, n, d = x1.shape
     n_out = n
@@ -83,8 +84,7 @@ def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=faiss.Stand
     elif downsample_method == 'var' or downsample_method == 'mean_var_t':
         # select a subset of the points with the largest point variance for maximum temporal movement
         if downsample_method == 'var':
-            temporal_patchlet_points = patchlet_points.reshape(b, t, n, k, d). \
-                permute(0, 2, 1, 3, 4).reshape(b, n, -1, d)
+            temporal_patchlet_points = patchlet_points.reshape(b, t, n, k, d).                 permute(0, 2, 1, 3, 4).reshape(b, n, -1, d)
             patchlet_variance = torch.linalg.norm(torch.var(temporal_patchlet_points, -2), dim=-1)
         elif downsample_method == 'mean_var_t':
             patchlet_variance = torch.linalg.norm(
@@ -336,8 +336,7 @@ class TPatchExtractorBidirectional(nn.Module):
     #     elif self.downsample_method == 'var' or self.downsample_method == 'mean_var_t':
     #         # select a subset of the points with the largest point variance for maximum temporal movement
     #         if self.downsample_method == 'var':
-    #             temporal_patchlet_points = patchlet_points.reshape(b, t, n, self.k, d).\
-    #                 permute(0, 2, 1, 3, 4).reshape(b, n,-1, d)
+    #             temporal_patchlet_points = patchlet_points.reshape(b, t, n, self.k, d).    #                 permute(0, 2, 1, 3, 4).reshape(b, n,-1, d)
     #             patchlet_variance = torch.linalg.norm(torch.var(temporal_patchlet_points, -2), dim=-1)
     #         elif self.downsample_method == 'mean_var_t':
     #             patchlet_variance = torch.linalg.norm(
@@ -363,8 +362,7 @@ class TPatchExtractorBidirectional(nn.Module):
         # forward patchlets
         x1 = point_seq
         x2 = torch.cat([point_seq[:, [0]], point_seq], dim=1)[:, :-1]
-        patchlet_points1, patchlet_feats1, distances1, idxs1, patchlets1, n, d_feat, fps_idx, out_x1 = \
-            get_tpatches(x1, x2, feat_seq, flip=False,
+        patchlet_points1, patchlet_feats1, distances1, idxs1, patchlets1, n, d_feat, fps_idx, out_x1 =             get_tpatches(x1, x2, feat_seq, flip=False,
                               k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
                               add_centroid_jitter=self.add_centroid_jitter,
                               downsample_method=self.downsample_method, npoints=self.npoints )
@@ -372,8 +370,7 @@ class TPatchExtractorBidirectional(nn.Module):
         #backward patchlets
         x1 = torch.flip(point_seq, [1])
         x2 = torch.cat([x1[:, [0]], x1], dim=1)[:, :-1]
-        patchlet_points2, patchlet_feats2, distances2, idxs2, patchlets2, _, _, fps_idx2, out_x2 = \
-            get_tpatches(x1, x2, feat_seq, flip=True,
+        patchlet_points2, patchlet_feats2, distances2, idxs2, patchlets2, _, _, fps_idx2, out_x2 =             get_tpatches(x1, x2, feat_seq, flip=True,
                               k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
                               add_centroid_jitter=self.add_centroid_jitter,
                               downsample_method=self.downsample_method, npoints=self.npoints )
@@ -494,8 +491,7 @@ class TPatchExtractorStrided(nn.Module):
     #     elif self.downsample_method == 'var' or self.downsample_method == 'mean_var_t':
     #         # select a subset of the points with the largest point variance for maximum temporal movement
     #         if self.downsample_method == 'var':
-    #             temporal_patchlet_points = patchlet_points.reshape(b, t, n, self.k, d).\
-    #                 permute(0, 2, 1, 3, 4).reshape(b, n,-1, d)
+    #             temporal_patchlet_points = patchlet_points.reshape(b, t, n, self.k, d).    #                 permute(0, 2, 1, 3, 4).reshape(b, n,-1, d)
     #             patchlet_variance = torch.linalg.norm(torch.var(temporal_patchlet_points, -2), dim=-1)
     #         elif self.downsample_method == 'mean_var_t':
     #             patchlet_variance = torch.linalg.norm(
@@ -520,14 +516,12 @@ class TPatchExtractorStrided(nn.Module):
 
         assert t % self.temporal_stride == 0
         n_temporal_segments = int(t / self.temporal_stride)
-        patchlets_accum, patchlet_points_accum, patchlet_feats_accum, distances_accum,\
-            idxs_accum, out_x_accum = [], [], [], [], [], []
+        patchlets_accum, patchlet_points_accum, patchlet_feats_accum, distances_accum,            idxs_accum, out_x_accum = [], [], [], [], [], []
         for i in range(n_temporal_segments):
             x1 = point_seq[:, i*self.temporal_stride:(i+1)*self.temporal_stride]
             x2 = torch.cat([x1[:, [0]], x1], dim=1)[:, :-1]
             feats = feat_seq[:, i*self.temporal_stride:(i+1)*self.temporal_stride] if feat_seq is not None else None
-            patchlet_points, patchlet_feats, distances, idxs, patchlets, n, d_feat, fps_idx, out_x = \
-                get_tpatches(x1, x2, feats, flip=False,
+            patchlet_points, patchlet_feats, distances, idxs, patchlets, n, d_feat, fps_idx, out_x =                 get_tpatches(x1, x2, feats, flip=False,
                               k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
                               add_centroid_jitter=self.add_centroid_jitter,
                               downsample_method=self.downsample_method, npoints=self.npoints )
@@ -535,8 +529,7 @@ class TPatchExtractorStrided(nn.Module):
             #bidirectional
             x1 = torch.flip(x1, [1])
             x2 = torch.cat([x1[:, [0]], x1], dim=1)[:, :-1]
-            patchlet_points2, patchlet_feats2, distances2, idxs2, patchlets2, _, _, fps_idx2, out_x2 = \
-                get_tpatches(x1, x2, feat_seq, flip=True,
+            patchlet_points2, patchlet_feats2, distances2, idxs2, patchlets2, _, _, fps_idx2, out_x2 =                 get_tpatches(x1, x2, feat_seq, flip=True,
                               k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
                               add_centroid_jitter=self.add_centroid_jitter,
                               downsample_method=self.downsample_method, npoints=self.npoints )
@@ -566,8 +559,7 @@ class TPatchExtractorStrided(nn.Module):
 
         normalized_patchlet_points = patchlet_points.detach().clone()
         for i in range(n_temporal_segments):
-            normalized_patchlet_points[:, i*self.temporal_stride:(i+1)*self.temporal_stride] -= \
-                normalized_patchlet_points[:, i * self.temporal_stride, :, [0], :].unsqueeze(1).detach()
+            normalized_patchlet_points[:, i*self.temporal_stride:(i+1)*self.temporal_stride] -=                 normalized_patchlet_points[:, i * self.temporal_stride, :, [0], :].unsqueeze(1).detach()
         patchlet_feats = torch.cat([patchlet_feats, normalized_patchlet_points], -1)
 
         return {'idx': idxs, 'distances': distances, 'patchlets': patchlets,
@@ -601,14 +593,12 @@ class TPatchExtractorModStrided(nn.Module):
 
         # assert t % self.temporal_stride == 0
         # n_temporal_segments = int(t / self.temporal_stride)
-        # patchlets_accum, patchlet_points_accum, patchlet_feats_accum, distances_accum,\
-        #     idxs_accum, out_x_accum = [], [], [], [], [], []
+        # patchlets_accum, patchlet_points_accum, patchlet_feats_accum, distances_accum,        #     idxs_accum, out_x_accum = [], [], [], [], [], []
         # for i in range(n_temporal_segments):
         #     x1 = point_seq[:, i*self.temporal_stride:(i+1)*self.temporal_stride]
         #     x2 = torch.cat([x1[:, [0]], x1], dim=1)[:, :-1]
         #     feats = feat_seq[:, i*self.temporal_stride:(i+1)*self.temporal_stride] if feat_seq is not None else None
-        #     patchlet_points, patchlet_feats, distances, idxs, patchlets, n, d_feat, fps_idx, out_x = \
-        #         get_tpatches(x1, x2, feats, flip=False,
+        #     patchlet_points, patchlet_feats, distances, idxs, patchlets, n, d_feat, fps_idx, out_x =         #         get_tpatches(x1, x2, feats, flip=False,
         #                       k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
         #                       add_centroid_jitter=self.add_centroid_jitter,
         #                       downsample_method=self.downsample_method, npoints=self.npoints )
@@ -616,8 +606,7 @@ class TPatchExtractorModStrided(nn.Module):
         #     #bidirectional
         #     x1 = torch.flip(x1, [1])
         #     x2 = torch.cat([x1[:, [0]], x1], dim=1)[:, :-1]
-        #     patchlet_points2, patchlet_feats2, distances2, idxs2, patchlets2, _, _, fps_idx2, out_x2 = \
-        #         get_tpatches(x1, x2, feat_seq, flip=True,
+        #     patchlet_points2, patchlet_feats2, distances2, idxs2, patchlets2, _, _, fps_idx2, out_x2 =         #         get_tpatches(x1, x2, feat_seq, flip=True,
         #                       k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
         #                       add_centroid_jitter=self.add_centroid_jitter,
         #                       downsample_method=self.downsample_method, npoints=self.npoints )
@@ -647,11 +636,11 @@ class TPatchExtractorModStrided(nn.Module):
         #
         # normalized_patchlet_points = patchlet_points.detach().clone()
         # for i in range(n_temporal_segments):
-        #     normalized_patchlet_points[:, i*self.temporal_stride:(i+1)*self.temporal_stride] -= \
-        #         normalized_patchlet_points[:, i * self.temporal_stride, :, [0], :].unsqueeze(1).detach()
+        #     normalized_patchlet_points[:, i*self.temporal_stride:(i+1)*self.temporal_stride] -=         #         normalized_patchlet_points[:, i * self.temporal_stride, :, [0], :].unsqueeze(1).detach()
         # patchlet_feats = torch.cat([patchlet_feats, normalized_patchlet_points], -1)
 
         return {'idx': idxs, 'distances': distances, 'patchlets': patchlets,
                 'patchlet_points': patchlet_points, 'patchlet_feats': patchlet_feats,
                 'normalized_patchlet_points': normalized_patchlet_points, 'fps_idx': fps_idx,
                 'x_current': out_x.reshape(b, t, n_out, d)}
+                

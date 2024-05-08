@@ -1,3 +1,4 @@
+
 # Author: Yizhak Ben-Shabat (Itzik), 2022
 # train 3DInAction
 
@@ -40,9 +41,11 @@ def main():
         project_name = 'IKEA EGO'
     elif cfg['DATA'].get('name') == 'IKEA_ASM':
         project_name = 'IKEA ASM'
+    elif cfg['DATA'].get('name') == 'MSR-Action3D':
+        project_name = 'MSR-Action3D'
     else:
         raise NotImplementedError
-    wandb_run = wandb.init(project=project_name, entity='cgmlab', save_code=True)
+    wandb_run = wandb.init(project=project_name, entity='mkjohn', save_code=True)
     cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
@@ -78,9 +81,9 @@ def run(cfg, logdir):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    os.system('cp %s %s' % (__file__, logdir))  # backup the current training file
+    os.system('cp "%s" "%s"' % (__file__, logdir))  # backup the current training file
     os.makedirs(os.path.join(logdir, 'models'), exist_ok=True)
-    os.system('cp %s %s' % ('models/*.py', os.path.join(logdir, 'models')))  # backup the models files
+    #os.system("cp '%s' '%s'" % ('/content/drive/MyDrive/Colab Notebooks/COMPSCI 674/Final Project/CS-674-Final-Project-3dInAction/models/*.py', os.path.join(logdir, 'models')))  # backup the models files
 
     # build dataloader and dataset
     train_dataloader, train_dataset = build_dataloader(config=cfg, training=True, shuffle=False) # should be unshuffled because of sampler
@@ -106,6 +109,8 @@ def run(cfg, logdir):
     model.cuda()
     model = nn.DataParallel(model)
 
+    best_model_trained_yet_and_its_accuracy = [None, 51.25]
+
     # define optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1E-6)
     lr_sched = optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.5)
@@ -121,6 +126,7 @@ def run(cfg, logdir):
     refine_flag = True
 
     pbar = tqdm(total=n_epochs, desc='Training', dynamic_ncols=True)
+    pbar.update(refine_epoch)
     while steps <= n_epochs:
         if steps <= refine_epoch and refine and refine_flag:
             # lr_sched.step()
@@ -146,7 +152,9 @@ def run(cfg, logdir):
         for train_batchind, data in enumerate(train_dataloader):
             num_iter += 1
             # get the inputs
-            inputs, labels, vid_idx, frame_pad = data['inputs'], data['labels'], data['vid_idx'], data['frame_pad']
+            inputs = data[1]
+            labels = data[0]
+            # inputs, labels, vid_idx, frame_pad = data['inputs'], data['labels'], data['vid_idx'], data['frame_pad']
             in_channel = cfg['MODEL'].get('in_channel', 3)
             inputs = inputs[:, :, 0:in_channel, :]
             inputs = inputs.cuda().requires_grad_().contiguous()
@@ -155,12 +163,15 @@ def run(cfg, logdir):
             out_dict = model(inputs)
             per_frame_logits = out_dict['pred']
 
+            labels = labels.unsqueeze(1) + torch.zeros((per_frame_logits.shape[0], per_frame_logits.shape[2])).cuda()
+            labels = labels.to(dtype = torch.long)
+
             # compute localization loss
-            loc_loss = F.binary_cross_entropy_with_logits(per_frame_logits, labels)
+            loc_loss = F.cross_entropy(per_frame_logits, labels.to(dtype = torch.long))
             tot_loc_loss += loc_loss.item()
 
-            # compute classification loss (with max-pooling along time B x C x T)
-            cls_loss = F.binary_cross_entropy_with_logits(torch.max(per_frame_logits, dim=2)[0], torch.max(labels, dim=2)[0])
+            # compute classification loss (with max-pooling along time dim1 x dim2)
+            cls_loss = F.cross_entropy(torch.max(per_frame_logits, dim=2)[0], torch.max(labels, dim=1)[0])
             tot_cls_loss += cls_loss.item()
             loss = (0.5 * loc_loss + 0.5 * cls_loss) / num_steps_per_update
             if pc_model == 'pn1' or pc_model == 'pn1_4d_basic':
@@ -170,7 +181,7 @@ def run(cfg, logdir):
             tot_loss += loss.item()
             loss.backward()
 
-            acc = utils.accuracy_v2(torch.argmax(per_frame_logits, dim=1), torch.argmax(labels, dim=1))
+            acc = utils.accuracy_v2(torch.argmax(per_frame_logits, dim=1), labels)
             avg_acc.append(acc.item())
 
             train_fraction_done = (train_batchind + 1) / train_num_batch
@@ -200,7 +211,9 @@ def run(cfg, logdir):
             if test_fraction_done <= train_fraction_done and test_batchind + 1 < test_num_batch:
                 model.eval()
                 test_batchind, data = next(test_enum)
-                inputs, labels, vid_idx, frame_pad = data['inputs'], data['labels'], data['vid_idx'], data['frame_pad']
+                inputs = data[1]
+                labels = data[0]
+                # inputs, labels, vid_idx, frame_pad = data['inputs'], data['labels'], data['vid_idx'], data['frame_pad']
                 in_channel = cfg['MODEL'].get('in_channel', 3)
                 inputs = inputs[:, :, 0:in_channel, :]
                 inputs = inputs.cuda().requires_grad_().contiguous()
@@ -209,17 +222,21 @@ def run(cfg, logdir):
                 with torch.no_grad():
                     out_dict = model(inputs)
                     per_frame_logits = out_dict['pred']
+
+                    labels = labels.unsqueeze(1) + torch.zeros((per_frame_logits.shape[0], per_frame_logits.shape[2])).cuda()
+                    labels = labels.to(dtype = torch.long)
+
                     # compute localization loss
-                    loc_loss = F.binary_cross_entropy_with_logits(per_frame_logits, labels)
-                    # compute classification loss (with max-pooling along time B x C x T)
-                    cls_loss = F.binary_cross_entropy_with_logits(torch.max(per_frame_logits, dim=2)[0],
-                                                                  torch.max(labels, dim=2)[0])
+                    loc_loss = F.cross_entropy(per_frame_logits, labels)
+                    # compute classification loss (with max-pooling along time dim1 x dim2)
+                    cls_loss = F.cross_entropy(torch.max(per_frame_logits, dim=2)[0],
+                                                                  torch.max(labels, dim = 1)[0])
                     loss = (0.5 * loc_loss + 0.5 * cls_loss) / num_steps_per_update
                     if pc_model == 'pn1' or pc_model == 'pn1_4d_basic':
                         trans, trans_feat = out_dict['trans'], out_dict['trans_feat']
                         loss += (0.001 * feature_transform_regularizer(trans) +
                                  0.001 * feature_transform_regularizer(trans_feat)) / num_steps_per_update
-                    acc = utils.accuracy_v2(torch.argmax(per_frame_logits, dim=1), torch.argmax(labels, dim=1))
+                    acc = utils.accuracy_v2(torch.argmax(per_frame_logits, dim=1), labels)
 
                 log_dict = {
                     "test/step": n_examples,
@@ -249,3 +266,4 @@ def run(cfg, logdir):
 
 if __name__ == '__main__':
     main()
+

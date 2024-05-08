@@ -1,9 +1,11 @@
+
 import torch
 from torch.utils.data import DataLoader
 
-from .IKEAEgoDatasetClips import IKEAEgoDatasetClips
-from .DfaustDataset import DfaustActionClipsDataset
-from .IKEAActionDatasetClips import IKEAActionDatasetClips
+# from .IKEAEgoDatasetClips import IKEAEgoDatasetClips
+# from .DfaustDataset import DfaustActionClipsDataset
+# from .IKEAActionDatasetClips import IKEAActionDatasetClips
+from .MSRAction3DDataset import MSRAction3DDataset
 
 import i3d_utils as utils
 
@@ -21,6 +23,8 @@ def build_dataset(cfg, training=True):
         dataset = IKEAActionDatasetClips(dataset_path=cfg_data['dataset_path'], set=split)
     elif cfg_data.get('name') == 'IKEA_EGO':
         dataset = IKEAEgoDatasetClips(dataset_path=cfg_data['dataset_path'], set=split, cfg_data=cfg_data)
+    elif cfg_data.get('name') == 'MSR-Action3D':
+        dataset = MSRAction3DDataset(dataset_path=cfg_data['dataset_path'], set=split, cfg_data=cfg_data)
     else:
         raise NotImplementedError
     return dataset
@@ -41,6 +45,8 @@ def build_dataloader(config, training=True, shuffle=False):
             weights = dataset.make_weights_for_balanced_classes()
         elif config['DATA'].get('name') == 'IKEA_ASM' or config['DATA'].get('name') == 'IKEA_EGO':
             weights = utils.make_weights_for_balanced_classes(dataset.clip_set, dataset.clip_label_count)
+        elif config['DATA'].get('name') == 'MSR-Action3D':
+            weights = dataset.make_weights_for_balanced_classes()
         else:
             raise NotImplementedError
         sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
@@ -49,10 +55,10 @@ def build_dataloader(config, training=True, shuffle=False):
 
     dataloader = DataLoader(
         dataset=dataset,
-        num_workers=num_workers,
-        pin_memory=True,
         shuffle=shuffle,
-        batch_size=batch_size,
-        sampler=sampler,
+        num_workers = num_workers,
+        sampler = sampler,
+        collate_fn = lambda x: x,
+        batch_size=batch_size
     )
     return dataloader, dataset
