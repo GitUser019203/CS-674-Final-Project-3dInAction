@@ -60,8 +60,6 @@ def main(args):
     os.makedirs(logdir, exist_ok=True)
     
     logger = create_basic_logger(logdir = logdir, level = args.loglevel)
-
-    logger = create_basic_logger(logdir = logdir, level = args.loglevel)
     
     # TODO: move to cfg project_name, entity
     if cfg['DATA'].get('name') == 'DFAUST':
@@ -394,9 +392,6 @@ def run(cfg, logdir, args):
 
             loader_pbar.update()
         loader_pbar.close()
-
-        logger.info(f'Last training log for epoch {steps}: {train_log_dict}')
-        logger.info(f'Last testing log for epoch {steps}: {test_log_dict}')
         
         if steps % save_every == 0 or steps == n_epochs:
             logger.info(f'Last training log for epoch {steps}: {train_log_dict}')
