@@ -89,7 +89,7 @@ TRAINING:
   lr: 0.001
   n_epochs: 3000
   pretrained_model: null
-  refine: false
+  refine: true
   refine_epoch: 2700
   steps_per_update: 8
 num_workers: 0

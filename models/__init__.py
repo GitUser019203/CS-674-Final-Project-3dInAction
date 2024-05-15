@@ -1,40 +1,18 @@
-
 import os
 import importlib
 import sys
 
-print("DEBUG")
-
 from .pointnet import PointNet1, PointNet1Basic
-
-print("DEBUG")
-
 # from .pointnet2_cls_ssg import PointNet2, PointNet2Basic
-
-print("DEBUG")
-
 from .pytorch_3dmfv import FourDmFVNet
-
-print("DEBUG")
-
 #from .tpatches import TPatchesInAction
 from .set_transformer import SetTransformerTemporal
-
-print("DEBUG-22")
-
 #from .tpatch_trajectory import tPatchTraj
 from .DGCNN import DGCNN
-
-print("DEBUG-27")
-
 #from .pstnet import PSTnet
-
-print("DEBUG-31")
-
 # from .PST_Transformer import PSTTransformer
 # from .P4Transformer import P4Transformer
 
-print("DEBUG")
 
 __all__ = {
     'pn1': PointNet1,
@@ -60,16 +38,16 @@ def build_model(model_cfg, num_class, frames_per_clip):
 file_name_dict = {
     'pn1': "pointnet.py",
     'pn1_4d_basic': "pointnet.py",
-    'pn2': "pointnet2_cls_ssg.py",
-    'pn2_4d_basic': "pointnet2_cls_ssg.py",
-    'tpatches': "tpatches.py",
+    #'pn2': "pointnet2_cls_ssg.py",
+    #'pn2_4d_basic': "pointnet2_cls_ssg.py",
+    #'tpatches': "tpatches.py",
     '3dmfv': "pytorch_3dmfv.py",
     'set_transformer': 'set_transformer.py',
-    'tpatch_trajectory': 'tpatch_trajectory.py',
+    #'tpatch_trajectory': 'tpatch_trajectory.py',
     'dgcnn': 'DGCNN.py',
-    'pstnet': 'pstnet.py',
-    'pst_transformer': 'PST_Transformer.py',
-    'p4transformer': 'P4Transformer.py',
+    #'pstnet': 'pstnet.py',
+    #'pst_transformer': 'PST_Transformer.py',
+    #'p4transformer': 'P4Transformer.py',
 }
 
 
@@ -87,4 +65,3 @@ class build_model_from_logdir(object):
         self.model = model_instance(model_cfg=model_cfg, num_class=num_classes, n_frames=frames_per_clip)
     def get(self):
         return self.model
-

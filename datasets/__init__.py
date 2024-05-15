@@ -1,13 +1,44 @@
-
 import torch
 from torch.utils.data import DataLoader
 
-# from .IKEAEgoDatasetClips import IKEAEgoDatasetClips
-# from .DfaustDataset import DfaustActionClipsDataset
-# from .IKEAActionDatasetClips import IKEAActionDatasetClips
+from .IKEAEgoDatasetClips import IKEAEgoDatasetClips
+from .DfaustDataset import DfaustActionClipsDataset
+from .IKEAActionDatasetClips import IKEAActionDatasetClips
 from .MSRAction3DDataset import MSRAction3DDataset
 
 import i3d_utils as utils
+import logging
+
+def create_basic_logger(logdir, level = 'info'):
+    print(f'Using logging level {level} for train.py')
+    global logger
+    logger = logging.getLogger('train_logger')
+    
+    #? set logging level
+    if level.lower() == 'debug':
+        logger.setLevel(logging.DEBUG)
+    elif level.lower() == 'info':
+        logger.setLevel(logging.INFO)
+    elif level.lower() == 'warning':
+        logger.setLevel(logging.WARNING)
+    elif level.lower() == 'error':
+        logger.setLevel(logging.ERROR)
+    elif level.lower() == 'critical':
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    #? create handlers
+    file_handler = logging.FileHandler(os.path.join(logdir, "log_train.log"))
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    stream_handler = logging.StreamHandler()
+    #stream_handler.setLevel(logging.INFO)
+    #stream_handler.setFormatter(stream_handler)
+    logger.addHandler(stream_handler)
+    return logger
 
 def build_dataset(cfg, training=True):
     split = 'train' if training else 'test'
@@ -30,7 +61,7 @@ def build_dataset(cfg, training=True):
     return dataset
 
 
-def build_dataloader(config, training=True, shuffle=False):
+def build_dataloader(config, training=True, shuffle=False, logger=None):
     dataset = build_dataset(config, training)
 
     num_workers = config['num_workers']
@@ -38,7 +69,12 @@ def build_dataloader(config, training=True, shuffle=False):
     data_sampler = config['DATA'].get('data_sampler')
 
     split = 'train' if training else 'test'
-    print("Number of clips in the {} set:{}".format(split, len(dataset)))
+    
+    if logger == None:
+        logger = create_basic_logger(logdir = config, level = 'info')
+        logger.info(f"Number of clips in the {split} set: {len(dataset)}")
+    else:
+        logger.info("Number of clips in the {} set: {}".format(split, len(dataset)))
 
     if training and data_sampler == 'weighted':
         if config['DATA'].get('name') == 'DFAUST':
@@ -49,6 +85,7 @@ def build_dataloader(config, training=True, shuffle=False):
             weights = dataset.make_weights_for_balanced_classes()
         else:
             raise NotImplementedError
+        logger.info(f"Using {config['DATA'].get('name')} for training")
         sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
     else:
         sampler = None
@@ -56,9 +93,10 @@ def build_dataloader(config, training=True, shuffle=False):
     dataloader = DataLoader(
         dataset=dataset,
         shuffle=shuffle,
-        num_workers = num_workers,
-        sampler = sampler,
-        collate_fn = lambda x: x,
-        batch_size=batch_size
+        num_workers=num_workers,
+        sampler=sampler,
+        collate_fn=lambda x: x,
+        batch_size=batch_size,
+        pin_memory=True, #pins to CUDA
     )
     return dataloader, dataset

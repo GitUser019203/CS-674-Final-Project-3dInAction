@@ -20,20 +20,46 @@ from datasets import build_dataloader
 #import wandb
 from tqdm import tqdm
 
+import logging
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
-parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
-parser.add_argument('--config', type=str, default='./configs/dfaust/config_dfaust.yaml', help='path to yaml config file')
-parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
-args = parser.parse_args()
+def create_basic_logger(logdir, level = 'info'):
+    print(f'Using logging level {level} for train.py')
+    global logger
+    logger = logging.getLogger('train_logger')
+    
+    #? set logging level
+    if level.lower() == 'debug':
+        logger.setLevel(logging.DEBUG)
+    elif level.lower() == 'info':
+        logger.setLevel(logging.INFO)
+    elif level.lower() == 'warning':
+        logger.setLevel(logging.WARNING)
+    elif level.lower() == 'error':
+        logger.setLevel(logging.ERROR)
+    elif level.lower() == 'critical':
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    #? create handlers
+    file_handler = logging.FileHandler(os.path.join(logdir, "log_train.log"))
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    stream_handler = logging.StreamHandler()
+    #stream_handler.setLevel(logging.INFO)
+    #stream_handler.setFormatter(stream_handler)
+    logger.addHandler(stream_handler)
+    return logger
 
-
-def main():
+def main(args):
     cfg = yaml.safe_load(open(args.config))
     logdir = os.path.join(args.logdir, args.identifier)
     os.makedirs(logdir, exist_ok=True)
 
+    logger = create_basic_logger(logdir = logdir, level = args.loglevel)
+    
     # TODO: move to cfg project_name, entity
     if cfg['DATA'].get('name') == 'DFAUST':
         project_name = 'DFAUST'
@@ -45,12 +71,18 @@ def main():
         project_name = 'MSR-Action3D'
     else:
         raise NotImplementedError
+    
+    logger.info(f'=================== Starting training run for {args.identifier} with data {project_name}')
+    logger.info(cfg)
+    
     #wandb_run = wandb.init(project=project_name, entity='mkjohn', save_code=True)
     #cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
 
+    logger.info(f'saving outputs for this run too: {logdir}')
+    
     #wandb_run.name = args.identifier
     #wandb.config.update(cfg)  # adds all the arguments as config variables
     #wandb.run.log_code(".")
@@ -60,9 +92,9 @@ def main():
     #wandb.define_metric("test/*", step_metric="train/step")
 
     # need to add argparse
-    run(cfg, logdir)
+    run(cfg, logdir, args)
 
-def run(cfg, logdir):
+def run(cfg, logdir, args):
     n_epochs = cfg['TRAINING']['n_epochs']
     lr = cfg['TRAINING']['lr']
     batch_size = cfg['TRAINING']['batch_size']
@@ -81,20 +113,39 @@ def run(cfg, logdir):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    os.system('cp "%s" "%s"' % (__file__, logdir))  # backup the current training file
-    os.makedirs(os.path.join(logdir, 'models'), exist_ok=True)
-    #os.system("cp '%s' '%s'" % ('/content/drive/MyDrive/Colab Notebooks/COMPSCI 674/Final Project/CS-674-Final-Project-3dInAction/models/*.py', os.path.join(logdir, 'models')))  # backup the models files
-
+    
+    
+    
+    
+    back_file = os.path.join(logdir, 'train.py')
+    models_backup_path = os.path.join(logdir, 'models')
+    os.makedirs(models_backup_path, exist_ok=True)
+    if os.name == 'nt':
+        os.system(f'copy "{__file__}" "{back_file}"') # backup the current training file
+        for file in os.listdir('models'):
+            if file.endswith('.py'):
+                current_file = os.path.join('models', file)
+                new_file=os.path.join(models_backup_path, file)
+                os.system(f'copy "{current_file}" "{new_file}"')
+    else:
+        os.system(f'cp "{__file__}" "{back_file}"') # backup the current training file
+        os.system(f'cp "models/*.py" "{models_backup_path}"')  # backup the models files
+        
+    logger.debug(f'backed up the current training file: {(__file__, back_file)}')
+    logger.debug(f'backup the models files: models/*.py, {models_backup_path}')
+    
     # build dataloader and dataset
-    train_dataloader, train_dataset = build_dataloader(config=cfg, training=True, shuffle=False) # should be unshuffled because of sampler
-    test_dataloader, test_dataset = build_dataloader(config=cfg, training=False, shuffle=True)
-
+    train_dataloader, train_dataset = build_dataloader(config=cfg, training=True, shuffle=False, logger=logger) # should be unshuffled because of sampler
+    test_dataloader, test_dataset = build_dataloader(config=cfg, training=False, shuffle=True, logger=logger)
     num_classes = train_dataset.num_classes
-
+    
     # build model
     model = build_model(cfg['MODEL'], num_classes, frames_per_clip)
+    
+    
 
     if pretrained_model is not None:
+        logger.info('Loading pretrained model')
         checkpoints = torch.load(pretrained_model)
         model.load_state_dict(checkpoints["model_state_dict"])  # load trained model
         model.replace_logits(num_classes)
@@ -102,14 +153,14 @@ def run(cfg, logdir):
     if refine:
         if refine_epoch == 0:
             raise ValueError("You set the refine epoch to 0. No need to refine, just retrain.")
+        logger.info('Refining model')
         refine_model_filename = os.path.join(logdir, str(refine_epoch).zfill(6)+'.pt')
         checkpoint = torch.load(refine_model_filename)
         model.load_state_dict(checkpoint["model_state_dict"])
 
     model.cuda()
     model = nn.DataParallel(model)
-
-    best_model_trained_yet_and_its_accuracy = [None, 51.25]
+    #best_model_trained_yet_and_its_accuracy = [None, 51.25]
 
     # define optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1E-6)
@@ -124,9 +175,15 @@ def run(cfg, logdir):
     train_num_batch = len(train_dataloader)
     test_num_batch = len(test_dataloader)
     refine_flag = True
+    
+    train_log_dict = {}
+    test_log_dict = {}
 
     pbar = tqdm(total=n_epochs, desc='Training', dynamic_ncols=True)
-    pbar.update(refine_epoch)
+    
+    if refine:
+        pbar.update(refine_epoch)
+    
     while steps <= n_epochs:
         if steps <= refine_epoch and refine and refine_flag:
             # lr_sched.step()
@@ -146,7 +203,6 @@ def run(cfg, logdir):
         num_iter = 0
         optimizer.zero_grad()
 
-        
         # Iterate over data.
         avg_acc = []
         loader_pbar = tqdm(total=len(train_dataloader), dynamic_ncols=True, leave=False)
@@ -290,5 +346,11 @@ def run(cfg, logdir):
 
 if __name__ == '__main__':
     print('start training')
-    main()
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logdir', type=str, default='./log/', help='path to model save dir')
+    parser.add_argument('--loglevel', type=str, default='info', help='set level of logger')
+    parser.add_argument('--identifier', type=str, default='debug', help='unique run identifier')
+    parser.add_argument('--config', type=str, default='./configs/dfaust/config_dfaust.yaml', help='path to yaml config file')
+    parser.add_argument('--fix_random_seed', action='store_true', default=False, help='fix random seed')
+    args = parser.parse_args()
+    main(args)
