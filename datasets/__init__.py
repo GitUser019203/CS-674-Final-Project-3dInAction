@@ -69,7 +69,7 @@ def build_dataloader(config, training=True, shuffle=False, logger=None):
     data_sampler = config['DATA'].get('data_sampler')
 
     split = 'train' if training else 'test'
-    
+
     if logger == None:
         logger = create_basic_logger(logdir = config, level = 'info')
         logger.info(f"Number of clips in the {split} set: {len(dataset)}")

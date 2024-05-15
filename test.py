@@ -50,9 +50,11 @@ def create_basic_logger(logdir, level = 'info'):
     return logger
 
 
+
 def run(cfg, logdir, model_path, output_path, args, logger=None):
     if logger == None:
         logger = create_basic_logger(logdir, 'info')
+
     batch_size = cfg['TESTING']['batch_size']
     frames_per_clip = cfg['DATA']['frames_per_clip']
     subset = cfg['TESTING']['set']
@@ -124,7 +126,6 @@ def run(cfg, logdir, model_path, output_path, args, logger=None):
     utils.convert_frame_logits_to_segment_json(logits_per_video, json_output_filename, test_dataset.video_list,
                                                test_dataset.action_list, dataset_name=data_name)
 
-
 def main(args):
     cfg = yaml.safe_load(open(os.path.join(args.logdir, args.identifier, 'config.yaml')))
     logdir = os.path.join(args.logdir, args.identifier)
@@ -138,8 +139,8 @@ def main(args):
     logger.info(f'=================== Starting testing run for {args.identifier}')
     logger.info(f'Config: {cfg}')
     logger.info(f'Model Path: {model_path}')
-    
     run(cfg, logdir, model_path, output_path, args, logger)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

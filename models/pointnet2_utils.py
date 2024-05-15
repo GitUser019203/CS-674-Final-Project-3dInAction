@@ -525,7 +525,10 @@ class FurthestPointSampling(Function):
         torch.Tensor
             (B, npoint) tensor containing the set
         """
-        fps_inds = _ext.furthest_point_sampling(xyz, npoint)
+        
+        #! fps_inds = _ext.furthest_point_sampling(xyz, npoint)
+        fps_inds = xyz
+        
         ctx.mark_non_differentiable(fps_inds)
         return fps_inds
 
@@ -535,3 +538,5 @@ class FurthestPointSampling(Function):
 
 
 farthest_point_sample = FurthestPointSampling.apply
+#farthest_point_sample = FurthestPointSampling.apply
+

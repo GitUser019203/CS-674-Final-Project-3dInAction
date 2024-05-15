@@ -37,7 +37,7 @@ if __name__ == '__main__':
     print('--------------- starting training')
     train.main(args) #--identifier $IDENTIFIER --config $CONFIG --logdir $LOGDIR --fix_random_seed
     #train_backup.main(args)
-    
+   
     #print('--------------- starting testing')
     # TODO: Needs fixing
     #test.main(args) #--identifier $IDENTIFIER --model_ckpt '000001.pt' --logdir $LOGDIR --fix_random_seed

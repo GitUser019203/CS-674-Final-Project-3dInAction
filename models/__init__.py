@@ -3,6 +3,7 @@ import importlib
 import sys
 
 from .pointnet import PointNet1, PointNet1Basic
+
 # from .pointnet2_cls_ssg import PointNet2, PointNet2Basic
 from .pytorch_3dmfv import FourDmFVNet
 #from .tpatches import TPatchesInAction
@@ -12,6 +13,7 @@ from .DGCNN import DGCNN
 #from .pstnet import PSTnet
 # from .PST_Transformer import PSTTransformer
 # from .P4Transformer import P4Transformer
+
 
 
 __all__ = {

@@ -3,14 +3,15 @@ import faiss
 from faiss.contrib.torch_utils import torch_replacement_knn_gpu as faiss_torch_knn_gpu
 from pykeops.torch import Vi, Vj
 from scipy.spatial import cKDTree
+from sklearn.neighbors import KDTree
 import numpy as np
 import torch
 import torch.nn as nn
 import models.pointnet2_utils as utils
 
-
-def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None,
-                 sample_mode='nn', add_centroid_jitter=None, downsample_method='fps', npoints=None):
+#def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=faiss.StandardGpuResources(), sample_mode='nn', add_centroid_jitter=None, downsample_method='fps', npoints=None):
+def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None, sample_mode='nn', add_centroid_jitter=None, downsample_method='fps', npoints=None):
+  #print('imported extractor!')
     b, t, n, d = x1.shape
     n_out = n
 
@@ -30,10 +31,13 @@ def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None,
     # loop over the data to reorder the indices to form the patchlets
     x_current = x2[:, 0]
     feat_seq_2 = torch.cat([feat_seq[:, [0]], feat_seq], dim=1)[:, :-1]
-    for i in range(0, t):
+    """for i in range(0, t):
         x_next = x1[:, i]
-        distances, idxs = get_knn(x_current[..., 0:3], x_next[..., 0:3], k=k, res=res, method='keops',
-                                  radius=radius)
+        #! distances, idxs = get_knn(x_current[..., 0:3], x_next[..., 0:3], k=k, res=res, method='keops',radius=radius)
+        distances, idxs = get_knn(x_current[..., 0:3], x_next[..., 0:3], k=k, res=res, method='kdtree',radius=radius) # faiss_gpu, spatial, keops
+        
+        
+        print('============ sample_mode', sample_mode)
         if sample_mode == 'nn':
             x_current = utils.index_points(x_next, idxs)[:, :, 0, :]
         elif sample_mode == 'randn':
@@ -53,7 +57,7 @@ def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None,
         distances_i[:, i], idxs_i[:, i] = distances, idxs
         patchlets[:, i] = idxs_i[:, i]
         patchlet_points[:, i] = utils.index_points(x_next, idxs).squeeze()
-        patchlet_feats[:, i] = utils.index_points(feat_seq_2[:, i], idxs).squeeze()
+        patchlet_feats[:, i] = utils.index_points(feat_seq_2[:, i], idxs).squeeze()"""
 
     distances = distances_i
     idxs = idxs_i
@@ -71,9 +75,12 @@ def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None,
     patchlets = patchlets.reshape(b * t, n, k)
 
     fps_idx = None
-    if downsample_method == 'fps':
+    """if downsample_method == 'fps':
         # select a subset of the points using fps for maximum coverage
-        selected_idxs = utils.farthest_point_sample(x1[:, 0].contiguous(), npoints).to(torch.int64)
+        
+        print('not using farthest_point_samples')
+        #! selected_idxs = utils.farthest_point_sample(x1[:, 0].contiguous(), npoints).to(torch.int64)
+        
         selected_idxs = selected_idxs.unsqueeze(1).repeat([1, t, 1]).reshape(-1, npoints)
         patchlet_points = utils.index_points(patchlet_points, selected_idxs)
         patchlet_feats = utils.index_points(patchlet_feats, selected_idxs)
@@ -98,13 +105,13 @@ def get_tpatches(x1, x2, feat_seq, flip=False, k=16, radius=0.2, res=None,
         distances = utils.index_points(distances, selected_idxs)
         idxs = utils.index_points(idxs, selected_idxs)
         patchlets = utils.index_points(patchlets, selected_idxs)
-        n = npoints
+        n = npoints"""
 
     return patchlet_points, patchlet_feats, distances, idxs, patchlets, n, d_feat, fps_idx, out_x
 
 
 def get_knn(x1, x2, k=16, res=None, method='faiss_gpu', radius=None):
-
+    print('doing knn')
     if method == 'faiss_gpu':
         distances, idxs = faiss_torch_knn_gpu(res, x1, x2, k=k)
     if method == 'faiss_cpu':
@@ -115,9 +122,25 @@ def get_knn(x1, x2, k=16, res=None, method='faiss_gpu', radius=None):
         tree = cKDTree(x2.detach().cpu().numpy())
         distances, idxs = tree.query(x1.detach().cpu().numpy(), k, workers=-1)
         distances, idxs = torch.tensor(distances).cuda(), torch.tensor(idxs).cuda()
+    
+    if method == 'kdtree':
+        tree = KDTree(x2.reshape(-1, 1).detach().cpu().numpy())
+        distances, idxs = tree.query(x1.reshape(-1, 1).detach().cpu().numpy(), k)
+        distances, idxs = torch.tensor(distances).cuda(), torch.tensor(idxs).cuda()
+        
+    
     if method == 'keops': #supports batch operaations
-        X_i = Vi(0, x1.shape[-1])
-        X_j = Vj(1, x2.shape[-1])
+        print("not using this due to compatibility issues with packages (issues installing g++, check keops git repo for more info on installing)")
+        #raise Exception("Not using keops")
+        #X_i = Vi(0, x1.shape[-1])
+        #X_j = Vj(1, x2.shape[-1])
+        
+        print(x2.shape)
+        print(x2.shape)
+        
+        X_i = x1
+        X_j  =x2
+        
         D_ij = ((X_i - X_j) ** 2).sum(-1)
         KNN_fun = D_ij.Kmin_argKmin(k, dim=1)
         distances, idxs = KNN_fun(x1.contiguous(), x2.contiguous())
@@ -362,7 +385,10 @@ class TPatchExtractorBidirectional(nn.Module):
         # forward patchlets
         x1 = point_seq
         x2 = torch.cat([point_seq[:, [0]], point_seq], dim=1)[:, :-1]
-        patchlet_points1, patchlet_feats1, distances1, idxs1, patchlets1, n, d_feat, fps_idx, out_x1 =             get_tpatches(x1, x2, feat_seq, flip=False,
+        
+        # print('*********** self.downsample_method', self.downsample_method)
+
+        patchlet_points1, patchlet_feats1, distances1, idxs1, patchlets1, n, d_feat, fps_idx, out_x1 = get_tpatches(x1, x2, feat_seq, flip=False,
                               k=self.k, radius=self.radius, res=self.res, sample_mode=self.sample_mode,
                               add_centroid_jitter=self.add_centroid_jitter,
                               downsample_method=self.downsample_method, npoints=self.npoints )

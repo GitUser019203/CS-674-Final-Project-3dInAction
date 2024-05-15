@@ -58,6 +58,8 @@ def main(args):
     cfg = yaml.safe_load(open(args.config))
     logdir = os.path.join(args.logdir, args.identifier)
     os.makedirs(logdir, exist_ok=True)
+    
+    logger = create_basic_logger(logdir = logdir, level = args.loglevel)
 
     logger = create_basic_logger(logdir = logdir, level = args.loglevel)
     
@@ -76,14 +78,15 @@ def main(args):
     logger.info(f'=================== Starting training run for {args.identifier} with data {project_name}')
     logger.info(cfg)
     
+
     #wandb_run = wandb.init(project=project_name, entity='mkjohn', save_code=True)
     #cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
-
+        
     logger.info(f'saving outputs for this run too: {logdir}')
-    
+
     #wandb_run.name = args.identifier
     #wandb.config.update(cfg)  # adds all the arguments as config variables
     #wandb.run.log_code(".")
@@ -170,6 +173,9 @@ def run(cfg, logdir, args):
     train_num_batch = len(train_dataloader)
     test_num_batch = len(test_dataloader)
     refine_flag = True
+    
+    train_log_dict = {}
+    test_log_dict = {}
 
     pbar = tqdm(total=n_epochs, desc='Training', dynamic_ncols=True)
     
@@ -184,6 +190,7 @@ def run(cfg, logdir, args):
     train_result_list = []
     test_result_list = []
     best_model_list = []
+
     while steps <= n_epochs:
         if steps <= refine_epoch and refine and refine_flag:
             # lr_sched.step()
@@ -205,6 +212,7 @@ def run(cfg, logdir, args):
 
         # Iterate over data.
         avg_acc = []
+        
         loader_pbar = tqdm(total=len(train_dataloader), dynamic_ncols=True, leave=False)
         for train_batchind, data in enumerate(train_dataloader):
             num_iter += 1
@@ -289,7 +297,8 @@ def run(cfg, logdir, args):
                 }
                 
                 train_result_list.append(train_log_dict)
-                #wandb.log(log_dict)
+                #wandb.log(train_log_dict)
+
 
                 num_iter = 0
                 tot_loss = 0.
@@ -382,9 +391,13 @@ def run(cfg, logdir, args):
                 #wandb.log(log_dict)
                 test_fraction_done = (test_batchind + 1) / test_num_batch
                 model.train()
+
             loader_pbar.update()
         loader_pbar.close()
 
+        logger.info(f'Last training log for epoch {steps}: {train_log_dict}')
+        logger.info(f'Last testing log for epoch {steps}: {test_log_dict}')
+        
         if steps % save_every == 0 or steps == n_epochs:
             logger.info(f'Last training log for epoch {steps}: {train_log_dict}')
             logger.info(f'Last testing log for epoch {steps}: {test_log_dict}')
