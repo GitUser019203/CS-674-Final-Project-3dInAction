@@ -2,6 +2,7 @@ import torch
 import pickle
 import numpy as NumPy
 import torch.cuda as tcuda
+import os
 
 # If CUDA is available, run code on GPU. Else, run code on CPU.
 if tcuda.is_available():
@@ -14,9 +15,9 @@ class MSRAction3DDataset(torch.utils.data.Dataset):
     # Call the __init__ function of the Dataset superclass.
     super(MSRAction3DDataset, self).__init__()
 
-    with open(dataset_path + 'MSRAction3D_FPS_Videos.pickle' , mode = 'rb') as msr_action3d_pickle_file:
+    with open(os.path.join(dataset_path, 'MSRAction3D_FPS_Videos.pickle') , mode = 'rb') as msr_action3d_pickle_file:
       msr_action3d_depth_map_sequences = pickle.load(msr_action3d_pickle_file)
-    msr_action3d_depth_map_sequence_labels = NumPy.load(dataset_path + 'MSRAction3D_FPS_Video_Labels.npz')['labels']
+    msr_action3d_depth_map_sequence_labels = NumPy.load(os.path.join(dataset_path, 'MSRAction3D_FPS_Video_Labels.npz'))['labels']
 
     # Store the number of depth maps per clip in a variable.
     clip_size = 8
@@ -36,8 +37,11 @@ class MSRAction3DDataset(torch.utils.data.Dataset):
 
     # Concatenate all the label Tensors in the dataset together to form a single Tensor. Similarly, 
     # concatenate all the clip Tensors into a single Tensor.
-    labels = torch.concatenate(MSRAction3D_dataset['labels'])
-    subsequences = torch.concatenate(MSRAction3D_dataset['clips'])
+    #labels = torch.concatenate(MSRAction3D_dataset['labels'])
+    #subsequences = torch.concatenate(MSRAction3D_dataset['clips'])
+    
+    labels = torch.concat(MSRAction3D_dataset['labels'])
+    subsequences = torch.concat(MSRAction3D_dataset['clips'])
 
     # Calculate the portion of the dataset to use depending on whether
     # the current phase is a training, validation or test phase.

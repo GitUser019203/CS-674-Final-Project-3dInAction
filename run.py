@@ -26,7 +26,7 @@ if __name__ == '__main__':
     #? Comment out if you want to use terminal flags above instead (I just got tired of manually entering them in)
     args.logdir = './log/'
     args.loglevel = 'debug'
-    args.identifier = 'set_transformer_default'
+    args.identifier = 'set_transformer_default_msr'
     #args.identifier = 'set_transformer_dbug'
     args.config = 'configs\ikeaasm\config_ikeaasm.yaml'
     args.model_ckpt = '000001.pt'

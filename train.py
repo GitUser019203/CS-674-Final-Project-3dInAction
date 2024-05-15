@@ -17,7 +17,7 @@ from models.pointnet import feature_transform_regularizer
 from models import build_model
 from datasets import build_dataloader
 
-import wandb
+#import wandb
 from tqdm import tqdm
 
 
@@ -45,19 +45,19 @@ def main():
         project_name = 'MSR-Action3D'
     else:
         raise NotImplementedError
-    wandb_run = wandb.init(project=project_name, entity='mkjohn', save_code=True)
-    cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
+    #wandb_run = wandb.init(project=project_name, entity='mkjohn', save_code=True)
+    #cfg['WANDB'] = {'id': wandb_run.id, 'project': wandb_run.project, 'entity': wandb_run.entity}
 
     with open(os.path.join(logdir, 'config.yaml'), 'w') as outfile:
         yaml.dump(cfg, outfile, default_flow_style=False)
 
-    wandb_run.name = args.identifier
-    wandb.config.update(cfg)  # adds all the arguments as config variables
-    wandb.run.log_code(".")
+    #wandb_run.name = args.identifier
+    #wandb.config.update(cfg)  # adds all the arguments as config variables
+    #wandb.run.log_code(".")
     # define our custom x axis metric
-    wandb.define_metric("train/step")
-    wandb.define_metric("train/*", step_metric="train/step")
-    wandb.define_metric("test/*", step_metric="train/step")
+    #wandb.define_metric("train/step")
+    #wandb.define_metric("train/*", step_metric="train/step")
+    #wandb.define_metric("test/*", step_metric="train/step")
 
     # need to add argparse
     run(cfg, logdir)
@@ -146,17 +146,29 @@ def run(cfg, logdir):
         num_iter = 0
         optimizer.zero_grad()
 
+        
         # Iterate over data.
         avg_acc = []
         loader_pbar = tqdm(total=len(train_dataloader), dynamic_ncols=True, leave=False)
         for train_batchind, data in enumerate(train_dataloader):
             num_iter += 1
             # get the inputs
-            inputs = data[1]
-            labels = data[0]
+            if torch.is_tensor(data[0]) == False or torch.is_tensor(data[1]) == False:
+                data_list = []
+                label_list = []
+                for i in data:
+                    data_list.append(i[1])
+                    label_list.append(i[0])
+                    
+                inputs = torch.stack(data_list)
+                labels = torch.Tensor(label_list)
+            else:
+                inputs = data[1]
+                labels = data[0]
+      
             # inputs, labels, vid_idx, frame_pad = data['inputs'], data['labels'], data['vid_idx'], data['frame_pad']
             in_channel = cfg['MODEL'].get('in_channel', 3)
-            inputs = inputs[:, :, 0:in_channel, :]
+            inputs = inputs[:, :, 0:in_channel, :]            
             inputs = inputs.cuda().requires_grad_().contiguous()
             labels = labels.cuda()
 
@@ -203,7 +215,7 @@ def run(cfg, logdir):
                     "train/lr":  optimizer.param_groups[0]['lr'],
                     "train/epoch": steps,
                 }
-                wandb.log(log_dict)
+                #wandb.log(log_dict)
 
                 num_iter = 0
                 tot_loss = 0.
@@ -211,8 +223,20 @@ def run(cfg, logdir):
             if test_fraction_done <= train_fraction_done and test_batchind + 1 < test_num_batch:
                 model.eval()
                 test_batchind, data = next(test_enum)
-                inputs = data[1]
-                labels = data[0]
+                
+                if torch.is_tensor(data[0]) == False or torch.is_tensor(data[1]) == False:
+                    data_list = []
+                    label_list = []
+                    for i in data:
+                        data_list.append(i[1])
+                        label_list.append(i[0])
+                        
+                    inputs = torch.stack(data_list)
+                    labels = torch.Tensor(label_list)
+                else:
+                    inputs = data[1]
+                    labels = data[0]
+                
                 # inputs, labels, vid_idx, frame_pad = data['inputs'], data['labels'], data['vid_idx'], data['frame_pad']
                 in_channel = cfg['MODEL'].get('in_channel', 3)
                 inputs = inputs[:, :, 0:in_channel, :]
@@ -245,7 +269,7 @@ def run(cfg, logdir):
                     "test/loc_loss": cls_loss.item(),
                     "test/Accuracy": acc.item()
                 }
-                wandb.log(log_dict)
+                #wandb.log(log_dict)
                 test_fraction_done = (test_batchind + 1) / test_num_batch
                 model.train()
 
@@ -265,5 +289,6 @@ def run(cfg, logdir):
 
 
 if __name__ == '__main__':
+    print('start training')
     main()
 
