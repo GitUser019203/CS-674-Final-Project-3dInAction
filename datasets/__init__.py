@@ -97,6 +97,6 @@ def build_dataloader(config, training=True, shuffle=False, logger=None):
         sampler=sampler,
         collate_fn=lambda x: x,
         batch_size=batch_size,
-        pin_memory=True, #pins to CUDA
+        #pin_memory=True, #pins to CUDA
     )
     return dataloader, dataset

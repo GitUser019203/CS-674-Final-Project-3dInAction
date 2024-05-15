@@ -1,6 +1,7 @@
 
 import argparse
 import train
+import train_backup
 import test
 import evaluate
 
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     #? Comment out if you want to use terminal flags above instead (I just got tired of manually entering them in)
     args.logdir = './log/'
     args.loglevel = 'debug'
-    args.identifier = 'debug_msr_action'
+    args.identifier = 'debug_msr_action_backup'
     #args.identifier = 'set_transformer_dbug'
     args.config = r'configs/msr-action3d/config_msr_action3d.yaml'
     args.model_ckpt = '000001.pt'
@@ -35,6 +36,7 @@ if __name__ == '__main__':
     
     print('--------------- starting training')
     train.main(args) #--identifier $IDENTIFIER --config $CONFIG --logdir $LOGDIR --fix_random_seed
+    #train_backup.main(args)
     
     #print('--------------- starting testing')
     # TODO: Needs fixing
