@@ -38,6 +38,7 @@ def create_basic_logger(logdir, level = 'info'):
         logger.setLevel(logging.INFO)
     
     #? create handlers
+    print('---------------------- ', os.path.join(logdir, "log_eval.log"))
     file_handler = logging.FileHandler(os.path.join(logdir, "log_eval.log"))
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
@@ -55,7 +56,7 @@ def main(args):
     #run = wandb.init(entity=cfg['WANDB']['entity'], project=cfg['WANDB']['project'], id=cfg['WANDB']['id'], resume='must')
     #wandb.define_metric("eval/step")
     #wandb.define_metric("eval/*", step_metric="eval/step")
-    logger = create_basic_logger(logdir = args.logdir, level = args.loglevel)
+    logger = create_basic_logger(logdir = os.path.join(args.logdir, args.identifier), level = args.loglevel)
     
     results_path = os.path.join(args.logdir, args.identifier, 'results/')
     subset = cfg['TESTING']['set']
@@ -85,11 +86,11 @@ def main(args):
     alpha = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6,
                     0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95])
     # compute action localization mAP
-    anet_detection = ANETdetection(gt_json_path, results_json,
+    anet_detection = ANETdetection(logger=logger, ground_truth_filename=gt_json_path, prediction_filename=results_json,
                                 subset='testing', tiou_thresholds=alpha,
                                 verbose=True, check_status=True)
     anet_detection.evaluate()
-
+    
     localization_score_str = "Action localization scores: \n" \
                             "Average mAP= {} \n".format(anet_detection.average_mAP) + \
                             "alpha = " + " & ".join(str(alpha).split()) + "\n " \
@@ -124,9 +125,9 @@ def main(args):
     top1, top3 = round(np.mean(acc1_per_vid), 2), round(np.mean(acc3_per_vid), 2)
     scores_str = 'top1, top3 accuracy: {} & {}\n'.format(top1, top3)
 
-    logger.info(scores_str)
+    logger.info(f'scores_str {scores_str}')
     balanced_acc_per_vid = []
-
+    
     for vid_idx in range(len(logits)):
         if data_name == 'DFAUST':
             single_label_per_frame = torch.tensor(gt_labels[vid_idx])
@@ -143,7 +144,7 @@ def main(args):
 
     balanced_score = round(np.mean(balanced_acc_per_vid)*100, 2)
     balanced_score_str = 'balanced accuracy: {}'.format(balanced_score)
-    logger.info(balanced_score_str)
+    logger.info(f'balanced_score_str: {balanced_score_str}')
 
 
     # output the dataset total score
