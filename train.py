@@ -412,6 +412,7 @@ def run(cfg, logdir, args):
         steps += 1
         lr_sched.step()
         pbar.update()
+    logging.shutdown()
 
 
 if __name__ == '__main__':

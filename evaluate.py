@@ -171,6 +171,7 @@ def eval(args, cfg, logger):
     #results_table = wandb.Table(columns=columns, data=[[top1, top3, balanced_score, mAP]])
     #images = wandb.Image(img, caption="Confusion matrix")
     #wandb.log({"eval/confusion matrix": images, "eval/Results summary": results_table})
+    logging.shutdown()
 
 def eval_msr(args, cfg, logger):
     results_path = os.path.join(args.logdir, args.identifier, 'results/')
@@ -235,6 +236,7 @@ def eval_msr(args, cfg, logger):
         with open('holdout_scores.json', 'w') as f:
             json.dump(holdout_scores, f)
 
+    logging.shutdown()
 
     
 def main(args):

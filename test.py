@@ -152,6 +152,8 @@ def run_msr(cfg, logdir, model_path, output_path, args, logger=None):
     #                                           test_dataset.action_list, dataset_name=data_name)
     with open(os.path.join(args.logdir, args.identifier,'holdout_test_pred_score.json'), 'w') as f:
         json.dump(pred_output_file, f)
+        
+    logging.shutdown()
     
 
 def run(cfg, logdir, model_path, output_path, args, logger=None):
