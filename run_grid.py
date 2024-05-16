@@ -5,6 +5,7 @@ import test
 import evaluate
 import os
 import json
+import shutil
 
 if __name__ == '__main__':
     
@@ -30,7 +31,10 @@ if __name__ == '__main__':
     
     grid_yaml_path = r'configs\msr-action3d\grid_temporal'
     identifier_list = os.listdir(grid_yaml_path)
-    counter = 0
+    counter = 67
+    
+    identifier_list = identifier_list[67:]
+    
     for id in identifier_list:
         print(counter)
         args.logdir = './log/'
@@ -52,5 +56,15 @@ if __name__ == '__main__':
         print('--------------- starting eval')
         evaluate.main(args) #--identifier $IDENTIFIER --logdir $LOGDIR
         counter += 1
+        
+        data = json.load(open('holdout_scores.json'))[-1]
+        if data['accuracy'] <= 5:
+            rm_model_name = data['model']
+            rm_model_path = os.path.join(args.logdir, args.identifier)
+            
+            print(f'removing {rm_model_name} in path {rm_model_path} ')
+            shutil.rmtree(rm_model_path)
+        
+
 
     
