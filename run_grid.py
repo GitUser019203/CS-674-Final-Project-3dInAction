@@ -29,11 +29,13 @@ if __name__ == '__main__':
     #? Manually set arg parser values here:
     #? Comment out if you want to use terminal flags above instead (I just got tired of manually entering them in)
     
-    grid_yaml_path = r'configs\msr-action3d\grid_temporal'
+    grid_yaml_path = r'configs\msr-action3d\config_msr_action3d_grid_search_2'
     identifier_list = os.listdir(grid_yaml_path)
-    counter = 67
+    counter = 0
+    print(f'number of runs {len(identifier_list)}')
+    #counter = 115# 67
     
-    identifier_list = identifier_list[67:]
+    #identifier_list = identifier_list[115:]
     
     for id in identifier_list:
         print(counter)

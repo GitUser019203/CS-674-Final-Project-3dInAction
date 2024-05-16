@@ -73,7 +73,7 @@ def run_msr(cfg, logdir, model_path, output_path, args, logger=None):
 
     test_dataloader, test_dataset = build_dataloader(config=cfg, training=False, shuffle=False, logger=logger)
     #test_dataloader, test_dataset = build_dataloader(config=cfg, training=False, shuffle=False)
-    num_classes = 20
+    num_classes = test_dataset.num_classes
     
     # setup the model
     spec = importlib.util.spec_from_file_location('build_model_from_logdir', os.path.join(logdir, 'models', '__init__.py'))

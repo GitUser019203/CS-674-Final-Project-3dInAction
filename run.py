@@ -30,7 +30,7 @@ if __name__ == '__main__':
     
     args.logdir = './log/'
     args.loglevel = 'debug'
-    args.identifier = f'config_msr_action3d_temporal_0'
+    args.identifier = f'config_msr_action3d_dev-mathew-2'
     args.config = f'configs\msr-action3d\{args.identifier}.yaml'
     args.model_ckpt = '000000.pt'
     args.fix_random_seed = False

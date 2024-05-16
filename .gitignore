@@ -21,3 +21,7 @@ configs/msr-action3d/config_msr_action3d_temporal_0.yaml
 configs/msr-action3d/grid_temporal/*
 datasets/data/MSRAction3D_fps_new/test/*
 datasets/data/MSRAction3D_fps_new/test/*
+configs/msr-action3d/config_msr_action3d_grid_search_2/*
+holdout_scores.json
+holdout_scores copy.json
+holdout_scores_backup_grid_search_1.json

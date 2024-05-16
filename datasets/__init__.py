@@ -93,12 +93,13 @@ def build_dataloader(config, training=True, shuffle=False, logger=None):
         sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
     else:
         sampler = None
+        #dataset.make_weights_for_balanced_classes()
 
     dataloader = DataLoader(
         dataset=dataset,
         shuffle=shuffle,
         num_workers=num_workers,
-        sampler=sampler,
+        #sampler=sampler,
         collate_fn=lambda x: x,
         batch_size=batch_size,
         #pin_memory=True, #pins to CUDA

@@ -1,20 +1,26 @@
-***3DInAction***: Understanding Human Actions in 3D Point Clouds
----
-Created by [Yizhak Ben-Shabat (Itzik)](http://www.itzikbs.com)<sup>1, 2</sup>, Oren Shrout<sup>1</sup> and [Stephen Gould](http://users.cecs.anu.edu.au/~sgould/)<sup>2</sup>
-
-<sup>1</sup>[Technion](https://www.technion.ac.il/), <sup>2</sup>[ANU](https://www.anu.edu.au/)
-
-__[Project page](https://sitzikbs.github.io/3dinaction.github.io/)&nbsp;| [Arxiv](https://arxiv.org/pdf/)__
-
-![teaser](assets/teaser.png)
-
-## Introduction
-This is the code for the 3DInAction paper for 3D point cloud action recognition.
-It allows to train, test and evaluate the tasks of per-frame and per-clip action classification.
-
-Please follow the installation instructions below.
-
-## Instructions
+## Code Contribution
+- Efran:
+  - Most of Efran's work is related to getting the original 3DInAction repo running (this codebase). 
+    - Efran attempted to get running the various modules in the original repos. The components with bugs that couldn't be resolved were moved after various attempts to get it up in running. You will notice in the code various functions and imports commented out or slightly modified.
+      - Unused models moved to `models\archive`.
+      - The scripts used in the `evaluation`, `figures`, `models`, and `util_scripts` had their imports and some of their scripts modified to avoid errors.
+  - `run.py` was created by Efran to manage model runs, testing, and eval instead of using run_experiment.sh
+  - `train.py`, `test.py`, and `eval.py` was modified from the original files in 3DInAction to work with MSR data
+    - All 3 files now had logging capabilities. They also have an accompyning notebook (`run.ipynb`, `test.ipynb`, and `evaluation.ipynb`) which were used for dev and test of code changes
+    - `train.py` now has special conditions for MSR data. `test.py` and `evaluation.py` now have a `run_ms`r function to handle msr data. `evaluation.py` now saves graphs of loss for train & test and stores in log\RUN_NAME\results folder. `test.py` catalogs results through training (without using wandb module) and stores in log\RUN_NAME folder
+  - Efran created several helper scripts for training & testing. `make_holdout.ipynb` was created to make holdout set for MSR data. `yaml_builder.ipynb` was created to multiple config yamls for grid search. `analyze_grid_search_results.ipynb` was created analyze gridsearch results. `run_grid.py` was created to perform train, test, eval on each gridsearch yaml file to find best hyperparemeters
+- Mathew:
+  - Most of Mathew's work can be found in the `helper_&_other_scripts` folder. Here he created various scripts to import data, test features, and try to get various parts of the original 3DInAction running. 
+    - Some of these notebooks are a part of a bigger file which can be viewed on Google Drive (shared with professor):https://drive.google.com/drive/folders/1Fk7pWL930S8xkWjXMdL5zD6kP5Ci8GWr?usp=drive_link
+    - The script `helper_&_other_scripts\Pipeline of 3DInAction Model.ipynb` is where Mathew spent time trying to implement the 3DInAction architecture from scratch. Was not used in final models but a lot of time & effort was put into this to get them to run.
+    - The scripts in `helper_&_other_scripts\Visualizing_Point_Clouds` where used to reproduce video of our training data. Was not used in the final project but the intention was to predict frames and compare original video with predicted
+    - The script `helper_&_other_scripts\SetTransformers.ipynb` was created by Mathew to modify efran's 3DInAction code to help get MSR data running.
+  - After we pivoted from IKEA + 3DInAction to Set Transformer & MSR, Mathew had already created a script `helper_&_other_scripts\MSR-Action3D Parse Depth Map Sequences.ipynb` that packed the MSR dataset into a format for us to test & train on.
+  - Mathew added code to get the train.py by function as well as the Set Transformer model working with the MSR dataset. He found a large bug that was caused problems with our training process and fixed it so that attention from the transformers was applied correctly
+- Harrison:
+  - Harrison helped update and edit the presentation & slides.
+  
+## Instructions for Setup
 
 ### 1. Requirements
 The code was tested with python 3.8.16 torch 1.10.1 and CUDA 11.3. 
@@ -32,30 +38,16 @@ conda install pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatoolkit
 #Then install all other requirements
 pip install faiss-gpu
 pip install -r requirements.txt (note, if any of the packages gives you an error, I suggest removing the '==version_number' from it)
-
-```
-Then compile the pointnet2 modules for FPS:
-```
-cd ./models
-(the part below gave me a lot of errors and I could not get it to work)
-python setup.py install
 ```
 
-We use `wandb` for tracking our experiments (losses accuracy etc.) (Note: I commented out the wandb references. Don't need to make an account)
-so you may need to either [set up an account](https://wandb.ai/site) or comment out the logging code lines.
 
 ### 2. Datasets
 
-We evaluate on three datasets:
-1. [DFAUST](https://dfaust.is.tue.mpg.de/) (~3.4GB)
-2. [IKEA ASM](https://drive.google.com/file/d/12u5YQqsB5L1H1BYzvu2HVDTyeAze4b1w/view?usp=share_link) (~117GB)
-3. [MSR-Action3D FPS](https://drive.google.com/file/d/1ffSQyjbaX32vRs26M9Hhw0nE2HMrUTSV/view?usp=share_link) (200MB)
+We evaluate on MSR datasets:
+1. [MSR-Action3D FPS](https://drive.google.com/file/d/1ffSQyjbaX32vRs26M9Hhw0nE2HMrUTSV/view?usp=share_link) (200MB) (used for this project)
+Optional:
 
 Download the datasets, extract the `.zip` file and update the `dataset_path` in the `.config` file under `DATA`.
-
-When using these datasets, make sure to cite their papers [DFAUST](https://scholar.googleusercontent.com/scholar.bib?q=info:RGX6IrpU2ooJ:scholar.google.com/&output=citation&scisdr=CgXc00R2ELeUhYL40-g:AAGBfm0AAAAAZA3-y-go0ts9juJTP1DBOg5lUNfn5zMH&scisig=AAGBfm0AAAAAZA3-y2KXFBjO0VPfoWGEy7NuvRbSZGf0&scisf=4&ct=citation&cd=-1&hl=en),
-[IKEA ASM](https://scholar.googleusercontent.com/scholar.bib?q=info:hCKBKB3YslAJ:scholar.google.com/&output=citation&scisdr=CgXc00R2ELeUhYL48sg:AAGBfm0AAAAAZA3-6siLLe4GCEF2f4SPhC22Iy9pUrl-&scisig=AAGBfm0AAAAAZA3-6uWOEcWQGHrgs7ksJs_1lyndHKQ9&scisf=4&ct=citation&cd=-1&hl=en),
-[MSR-Action3D](https://scholar.googleusercontent.com/scholar.bib?q=info:-qB118Rs36gJ:scholar.google.com/&output=citation&scisdr=CgXc00R2ELeUhYL5DTY:AAGBfm0AAAAAZA3_FTbAEFhuDkThjAK4_zxwo92ke8b6&scisig=AAGBfm0AAAAAZA3_FX3kgKltmprj2akmnWBi_2HZTzfZ&scisf=4&ct=citation&cd=-1&hl=en).
 
 ### 3. Train, test and evaluate
 
@@ -67,27 +59,3 @@ For a customized model, edit the `.config` file.
 Examples for different configurations are available in the `configs` directory.
 
 
-## Acknowledgements
-
-This project has received funding from the European Union's Horizon 2020 research and innovation
-programme under the Marie Sklodowska-Curie grant agreement No 893465.
-We also thank the NVIDIA Academic Hardware Grant Program for providing high-speed A5000 GPU
-
-## License and Citation
-
-This paper was accepted to CVPR 2024 (the citation will be updated once CVF makes the paper public).
-
-If you find our work useful in your research, please cite our paper:
-
-[Preprint](http://arxiv.org/abs/2303.06346/):
-```bibtex
-{
-@article{benshabat2023tpatches,
-  title={3DInAction: Understanding Human Actions in 3D Point Clouds},
-  author={Ben-Shabat, Yizhak and Shrout, Oren and Gould, Stephen},
-  journal={arXiv preprint arXiv:2303.06346},
-  year={2023}
-}
-```
-
-See [LICENSE](https://github.com/sitzikbs/3dincaction/blob/main/LICENCE) file.

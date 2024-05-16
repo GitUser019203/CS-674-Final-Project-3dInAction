@@ -135,8 +135,10 @@ class SetTransformerTemporal_MSR(SetTransformer):
         self.final_layer = nn.Linear(512, num_class)
 
     def forward(self, X):
-        b, t, d, n = X.shape
-        X = X.reshape(b*t, d, n).permute(0, 2, 1)
+        #b, t, d, n = X.shape
+        b, t, n, d = X.shape
+        #X = X.reshape(b*t, d, n).permute(0, 2, 1)
+        X = X.reshape(b*t, n, d) #.permute(0, 2, 1)
         out = self.dec(self.enc(X)).squeeze()
         # out = out.reshape(b, t, self.dim_hidden).permute(0, 2, 1)
         out = self.classifier12(out)
