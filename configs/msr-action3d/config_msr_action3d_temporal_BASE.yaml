@@ -1,10 +1,11 @@
 DATA:
   data_sampler: weighted
-  dataset_path: datasets/data/MSRAction3D_fps
-  frame_skip: 1
-  frames_per_clip: 64
+  dataset_path: datasets\data\MSRAction3D_fps_new\train
+  dataset_path_test: datasets\data\MSRAction3D_fps_new\test
+  frame_skip: 1 # doesn't seem to be used in train.py & test.py
+  frames_per_clip: 64 #64
   gender: all
-  n_points: 128
+  n_points: 128 #doesn't affect MSR
   name: MSR-Action3D
   noisy_data:
     test: false
@@ -44,13 +45,13 @@ MODEL:
     temporal_kernel_size: 3
     temporal_stride: 2
   SET_TRANSFORMER:
-    dim_hidden: 512
-    dim_input: 3
+    dim_hidden: 512 #* 512
+    dim_input: 3 # do not change for MSR
     ln: false
-    num_heads: 4
-    num_inds: 32
+    num_heads: 4 #* 4
+    num_inds: 32 #* 32
     num_outputs: 1
-    temporal_smoothing: 0
+    temporal_smoothing: 0 #* 0
   TPATCHES:
     attn_num_heads: 4
     centroid_jitter: 0.005
@@ -80,18 +81,18 @@ MODEL:
 TESTING:
   aug:
   - ''
-  batch_size: 2
+  batch_size: 8 #* 2
   set: test
 TRAINING:
   aug:
   - ''
-  batch_size: 32
-  lr: 0.001
-  n_epochs: 3000
+  batch_size: 32 #* 32
+  lr: 0.001 #* 0.001
+  n_epochs: 800
   pretrained_model: null
-  refine: true
+  refine: false
   refine_epoch: 2700
-  steps_per_update: 8
+  steps_per_update: 32 #8 #doesn't seem to do anything for MSR
 num_workers: 0
-save_every: 10
+save_every: 200 #10
 seed: 0

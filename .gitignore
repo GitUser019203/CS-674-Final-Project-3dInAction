@@ -15,3 +15,9 @@ datasets/data/IKEA ASM/*
 datasets/data/MSRAction3D_fps/*
 efran_test.py
 my_token_file
+configs/msr-action3d/archive/*
+configs/msr-action3d/archive_2/*
+configs/msr-action3d/config_msr_action3d_temporal_0.yaml
+configs/msr-action3d/grid_temporal/*
+datasets/data/MSRAction3D_fps_new/test/*
+datasets/data/MSRAction3D_fps_new/test/*

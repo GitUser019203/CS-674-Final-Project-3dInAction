@@ -43,6 +43,7 @@ def create_basic_logger(logdir, level = 'info'):
 def build_dataset(cfg, training=True):
     split = 'train' if training else 'test'
     cfg_data = cfg['DATA']
+    
     if cfg_data.get('name') == 'DFAUST':
         data_augmentation = cfg['TRAINING'].get('aug') if split == 'train' else cfg['TESTING'].get('aug')
         dataset = DfaustActionClipsDataset(
@@ -55,7 +56,10 @@ def build_dataset(cfg, training=True):
     elif cfg_data.get('name') == 'IKEA_EGO':
         dataset = IKEAEgoDatasetClips(dataset_path=cfg_data['dataset_path'], set=split, cfg_data=cfg_data)
     elif cfg_data.get('name') == 'MSR-Action3D':
-        dataset = MSRAction3DDataset(dataset_path=cfg_data['dataset_path'], set=split, cfg_data=cfg_data)
+        if training:
+            dataset = MSRAction3DDataset(dataset_path=cfg_data['dataset_path'], set=split, cfg_data=cfg_data)
+        else:
+            dataset = MSRAction3DDataset(dataset_path=cfg_data['dataset_path_test'], set=split, cfg_data=cfg_data)
     else:
         raise NotImplementedError
     return dataset

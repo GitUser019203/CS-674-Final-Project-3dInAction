@@ -2,6 +2,8 @@
 # evaluate action recognition performance using acc and mAp
 
 import os
+import json
+import pandas as pd
 import argparse
 import numpy as np
 import torch
@@ -18,10 +20,10 @@ import yaml
 
 import logging
 
-def create_basic_logger(logdir, level = 'info'):
+def create_basic_logger(logdir, level = 'info', logger_name = 'eval_logger'):
     print(f'Using logging level {level} for evaluate.py')
     global logger
-    logger = logging.getLogger('eval_logger')
+    logger = logging.getLogger(logger_name)
     
     #? set logging level
     if level.lower() == 'debug':
@@ -50,14 +52,7 @@ def create_basic_logger(logdir, level = 'info'):
     logger.addHandler(stream_handler)
     return logger
 
-
-def main(args):
-    cfg = yaml.safe_load(open(os.path.join(args.logdir, args.identifier, 'config.yaml')))
-    #run = wandb.init(entity=cfg['WANDB']['entity'], project=cfg['WANDB']['project'], id=cfg['WANDB']['id'], resume='must')
-    #wandb.define_metric("eval/step")
-    #wandb.define_metric("eval/*", step_metric="eval/step")
-    logger = create_basic_logger(logdir = os.path.join(args.logdir, args.identifier), level = args.loglevel)
-    
+def eval(args, cfg, logger):
     results_path = os.path.join(args.logdir, args.identifier, 'results/')
     subset = cfg['TESTING']['set']
     data_name = cfg['DATA']['name']
@@ -176,6 +171,84 @@ def main(args):
     #results_table = wandb.Table(columns=columns, data=[[top1, top3, balanced_score, mAP]])
     #images = wandb.Image(img, caption="Confusion matrix")
     #wandb.log({"eval/confusion matrix": images, "eval/Results summary": results_table})
+
+def eval_msr(args, cfg, logger):
+    results_path = os.path.join(args.logdir, args.identifier, 'results/')
+    subset = cfg['TESTING']['set']
+    data_name = cfg['DATA']['name']
+
+    # load the gt and predicted data
+    training_ = True if subset == 'train' else False
+    dataset = build_dataset(cfg, training=training_)
+    
+    holdout_test_json = json.load(open(os.path.join(args.logdir, args.identifier, 'holdout_test_pred_score.json')))
+    best_model_json = json.load(open(os.path.join(args.logdir, args.identifier, 'best_model_list.json')))
+    test_results_json = json.load(open(os.path.join(args.logdir, args.identifier, 'test_result_list.json')))
+    train_results_json = json.load(open(os.path.join(args.logdir, args.identifier, 'train_result_list.json')))
+    
+    holdout_test_df = pd.DataFrame(holdout_test_json)
+    best_model_df = pd.DataFrame(best_model_json)
+    test_results_df = pd.DataFrame(test_results_json)
+    train_results_df = pd.DataFrame(train_results_json)
+    
+    #? saving figs
+    test_fig1, test_ax1 = plt.subplots()
+    test_ax1.plot(test_results_df.index, test_results_df['test/loss'])
+    test_ax1.set_ylabel('test/loss')
+    test_ax1.set_xlabel('epoch')
+    test_ax1.set_title(f'Train Test Loss: {args.identifier}')
+    test_fig1.savefig(os.path.join(args.logdir, args.identifier, 'results','train_test_loss_graph.png'))
+
+    test_fig2, test_ax2 = plt.subplots()
+    test_ax2.plot(test_results_df.index, test_results_df['test/Accuracy'])
+    test_ax2.set_ylabel('test/Accuracy')
+    test_ax2.set_xlabel('epoch')
+    test_ax2.set_title(f'Train Test Acc: {args.identifier}')
+    test_fig2.savefig(os.path.join(args.logdir, args.identifier, 'results','train_test_acc_graph.png'))
+    
+    train_fig1, train_ax1 = plt.subplots()
+    train_ax1.plot(train_results_df.index, train_results_df['train/loss'])
+    train_ax1.set_ylabel('test/loss')
+    train_ax1.set_xlabel('epoch')
+    train_ax1.set_title(f'Train Test Loss: {args.identifier}')
+    train_fig1.savefig(os.path.join(args.logdir, args.identifier, 'results','train_loss_graph.png'))
+
+    train_fig2, train_ax2 = plt.subplots()
+    train_ax2.plot(train_results_df.index, train_results_df['train/Accuracy'])
+    train_ax2.set_ylabel('test/Accuracy')
+    train_ax2.set_xlabel('epoch')
+    train_ax2.set_title(f'Train Test Acc: {args.identifier}')
+    train_fig2.savefig(os.path.join(args.logdir, args.identifier, 'results','train_acc_graph.png'))
+    
+    logger.info(f'Saved figs too results folder')
+    
+    data = {"model": args.identifier, "accuracy": holdout_test_df['acc'].mean()}
+
+    logger.info(f'Model holdout score: {data}')
+    
+    if os.path.exists('holdout_scores.json') == False:
+        with open('holdout_scores.json', 'w') as f:
+            json.dump([data], f)
+    else:
+        holdout_scores = json.load(open('holdout_scores.json'))
+        holdout_scores.append(data)
+        with open('holdout_scores.json', 'w') as f:
+            json.dump(holdout_scores, f)
+
+
+    
+def main(args):
+    cfg = yaml.safe_load(open(os.path.join(args.logdir, args.identifier, 'config.yaml')))
+    #run = wandb.init(entity=cfg['WANDB']['entity'], project=cfg['WANDB']['project'], id=cfg['WANDB']['id'], resume='must')
+    #wandb.define_metric("eval/step")
+    #wandb.define_metric("eval/*", step_metric="eval/step")
+    logger = create_basic_logger(logdir = os.path.join(args.logdir, args.identifier), level = args.loglevel, logger_name = f'{args.identifier}_eval_logger')
+    if cfg['DATA']['name'] == 'MSR-Action3D':
+        eval_msr(args, cfg, logger)
+    else:
+        eval(args, cfg, logger)
+    
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

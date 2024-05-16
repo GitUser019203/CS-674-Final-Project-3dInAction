@@ -7,7 +7,7 @@ from .pointnet import PointNet1, PointNet1Basic
 # from .pointnet2_cls_ssg import PointNet2, PointNet2Basic
 from .pytorch_3dmfv import FourDmFVNet
 #from .tpatches import TPatchesInAction
-from .set_transformer import SetTransformerTemporal
+from .set_transformer import SetTransformerTemporal, SetTransformerTemporal_MSR
 #from .tpatch_trajectory import tPatchTraj
 from .DGCNN import DGCNN
 #from .pstnet import PSTnet
@@ -24,6 +24,7 @@ __all__ = {
     #'tpatches': TPatchesInAction,
     '3dmfv': FourDmFVNet,
     'set_transformer': SetTransformerTemporal,
+    'set_transformer_regular': SetTransformerTemporal_MSR,
     #'tpatch_trajectory': tPatchTraj,
     'dgcnn': DGCNN,
 #    'pst_transformer': PSTTransformer,
@@ -32,9 +33,8 @@ __all__ = {
 }
 
 def build_model(model_cfg, num_class, frames_per_clip):
-    model = __all__[model_cfg['pc_model']](
-        model_cfg=model_cfg, num_class=num_class, n_frames=frames_per_clip
-    )
+    
+    model = __all__[model_cfg['pc_model']](model_cfg=model_cfg, num_class=num_class, n_frames=frames_per_clip)
     return model
 
 file_name_dict = {
@@ -45,6 +45,7 @@ file_name_dict = {
     #'tpatches': "tpatches.py",
     '3dmfv': "pytorch_3dmfv.py",
     'set_transformer': 'set_transformer.py',
+    'set_transformer_regular': 'set_transformer.py',
     #'tpatch_trajectory': 'tpatch_trajectory.py',
     'dgcnn': 'DGCNN.py',
     #'pstnet': 'pstnet.py',

@@ -28,21 +28,29 @@ if __name__ == '__main__':
     #? Manually set arg parser values here:
     #? Comment out if you want to use terminal flags above instead (I just got tired of manually entering them in)
     
-    args.logdir = './log/'
-    args.loglevel = 'debug'
-    args.identifier = f'config_msr_action3d_temporal_0'
-    args.config = f'configs\msr-action3d\{args.identifier}.yaml'
-    args.model_ckpt = '000000.pt'
-    args.fix_random_seed = False
-    print('args', args)
+    grid_yaml_path = r'configs\msr-action3d\grid_temporal'
+    identifier_list = os.listdir(grid_yaml_path)
+    counter = 0
+    for id in identifier_list:
+        print(counter)
+        args.logdir = './log/'
+        args.loglevel = 'debug'
+        args.identifier = id[:-5]
+        args.config = os.path.join(grid_yaml_path, id)
+        args.model_ckpt = '000000.pt'
+        args.fix_random_seed = False
+        print('args', args)
+        
+        print('--------------- starting training')
+        train.main(args) #--identifier $IDENTIFIER --config $CONFIG --logdir $LOGDIR --fix_random_seed
+
+        print('--------------- starting testing')    
+        best = json.load(open(os.path.join(args.logdir, args.identifier, 'best_model_list.json')))
+        args.model_ckpt = best[-1]['best']
+        test.main(args) #--identifier $IDENTIFIER --model_ckpt '000001.pt' --logdir $LOGDIR --fix_random_seed
+
+        print('--------------- starting eval')
+        evaluate.main(args) #--identifier $IDENTIFIER --logdir $LOGDIR
+        counter += 1
+
     
-    print('--------------- starting training')
-    train.main(args) #--identifier $IDENTIFIER --config $CONFIG --logdir $LOGDIR --fix_random_seed
-
-    print('--------------- starting testing')    
-    best = json.load(open(os.path.join(args.logdir, args.identifier, 'best_model_list.json')))
-    args.model_ckpt = best[-1]['best']
-    test.main(args) #--identifier $IDENTIFIER --model_ckpt '000001.pt' --logdir $LOGDIR --fix_random_seed
-
-    print('--------------- starting eval')
-    evaluate.main(args) #--identifier $IDENTIFIER --logdir $LOGDIR

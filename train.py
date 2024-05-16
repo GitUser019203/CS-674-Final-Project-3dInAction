@@ -23,10 +23,10 @@ from tqdm import tqdm
 
 import logging
 
-def create_basic_logger(logdir, level = 'info'):
+def create_basic_logger(logdir, level = 'info', logger_name = 'train_logger'):
     print(f'Using logging level {level} for train.py')
     global logger
-    logger = logging.getLogger('train_logger')
+    logger = logging.getLogger(logger_name)
     
     #? set logging level
     if level.lower() == 'debug':
@@ -59,7 +59,7 @@ def main(args):
     logdir = os.path.join(args.logdir, args.identifier)
     os.makedirs(logdir, exist_ok=True)
     
-    logger = create_basic_logger(logdir = logdir, level = args.loglevel)
+    logger = create_basic_logger(logdir = logdir, level = args.loglevel, logger_name = f'{args.identifier}_train_logger')
     
     # TODO: move to cfg project_name, entity
     if cfg['DATA'].get('name') == 'DFAUST':
@@ -181,7 +181,7 @@ def run(cfg, logdir, args):
         pbar.update(refine_epoch)
     
     best_acc = 0
-    best_model = 0
+    best_results = None
     
     train_log_dict = {}
     test_log_dict = {}
@@ -297,7 +297,6 @@ def run(cfg, logdir, args):
                 train_result_list.append(train_log_dict)
                 #wandb.log(train_log_dict)
 
-
                 num_iter = 0
                 tot_loss = 0.
 
@@ -364,17 +363,18 @@ def run(cfg, logdir, args):
                 }
                 test_result_list.append(test_log_dict)
                 
-                if test_log_dict["test/Accuracy"] >= best_acc:
+                if (test_log_dict["test/Accuracy"] > best_acc) or (test_log_dict["test/Accuracy"] > best_acc and best_results != None and test_log_dict["test/loss"] > best_results["test/loss"]):
                     best_acc = test_log_dict["test/Accuracy"]
-                    logger.info(f'********* Best model test accuracy so far in test batch {test_batchind} step {steps}: {test_log_dict}')
+                    best_results = test_log_dict
+                    logger.info(f'********* Best model test accuracy so far in test batch {train_batchind} step {steps}: {test_log_dict}')
                     
                     # save model
                     torch.save({"model_state_dict": model.module.state_dict(),
                                 "optimizer_state_dict": optimizer.state_dict(),
                                 "lr_state_dict": lr_sched.state_dict()},
-                            os.path.join(logdir,  'best' +'_'+ str(steps).zfill(6) + '_'+ str(test_batchind) + '.pt'))
+                            os.path.join(logdir,  'best' +'_'+ str(steps).zfill(6) + '_'+ str(train_batchind) + '.pt'))
                     
-                    test_result_list[-1]['best'] = 'best' +'_'+ str(steps).zfill(6) + '_'+ str(test_batchind) + '.pt'
+                    test_result_list[-1]['best'] = 'best' +'_'+ str(steps).zfill(6) + '_'+ str(train_batchind) + '.pt'
                     
                     with open(os.path.join(logdir, 'test_result_list.json'), 'w') as f:
                         json.dump(test_result_list, f)
